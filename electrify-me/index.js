@@ -12,6 +12,7 @@ function help( message ) {
     console.log("    -c <FILE>   CSS to be injected into website.");
     console.log("    -m          Start maximized.");
     console.log("    -d          Run in development mode.");
+    console.log("    -h          Print this help.");
     console.log("");
     console.log("Example: <electrify> https://web.whatsapp.com "
         + "-c inject.css -d");
@@ -36,6 +37,9 @@ const convert = __dirname + "/ext/imagemagick-windows/convert.exe";
 // PARSE COMMAND LINE /////////////////////////////////////////////////////////
 
 const argv = minimist(process.argv.slice(2));
+if ( argv.h != undefined || argv.help != undefined)
+    help();
+
 var url = argv._;
 if (url == undefined || url.length == 0)
     help("No URL provided.");
