@@ -1,7 +1,8 @@
 # electrify.me
 > Create a native app from a website. Just like that.
 
-## About
+![build](https://img.shields.io/badge/build-probably%20broken-orange.svg)
+![version](https://img.shields.io/badge/version-*-lightgrey.svg)
 
 **electrify [me]**
 
