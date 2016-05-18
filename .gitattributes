@@ -1,0 +1,10 @@
+.gitattributes export-ignore  
+.gitignore export-ignore
+
+*.bat export-ignore
+*.sh export-ignore
+*.zip export-ignore
+*sublime* export-ignore
+
+dev export-ignore
+node_modules export-ignore

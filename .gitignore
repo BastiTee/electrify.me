@@ -2,6 +2,7 @@
 # OWN ADDITIONS
 electrify-me/favicon*
 *.sublime-workspace
+*.zip
 ################################################################################
 
 # Logs

@@ -126,17 +126,17 @@ var setupWebcontent = function (faviconFile, splash) {
         if (devMode)
             bw.openDevTools({ detach: true });
         bw.loadURL(url);
+        bw.on("closed", function() {
+            bw = null;
+        });
         bw.webContents.on("did-finish-load", function() {
             console.log("All data loaded.");
             splash.destroy();
             if (maximized)
                 bw.maximize();
             bw.show();
+            resolve(bw);
         });
-        bw.on("closed", function() {
-            bw = null;
-        });
-        resolve(bw);
     });
 };
 
@@ -146,6 +146,8 @@ var injectCss = function ( bw ) {
             console.log("No css file provided.");
             resolve(bw);
             return;
+        } else {
+            console.log("CSS provided at:\n\t" + cssFile)
         }
         fs.readFile(cssFile, 'utf8', function (err,data) {
             if (err) {
@@ -153,6 +155,8 @@ var injectCss = function ( bw ) {
                 console.log("Could not read provided CSS file. Ignoring.");
                 resolve(bw);
                 return;
+            } else {
+                console.log("CSS data read:\n\t" + data);
             }
             bw.webContents.insertCSS (data);
             resolve(bw);
@@ -182,7 +186,7 @@ var startApplication = function() {
         return injectCss(bw, cssFile);
     })
     .then(function(bw) {
-        console.log("Finished invokations.");
+        console.log("Finished startup sequence.");
     })
 };
 
