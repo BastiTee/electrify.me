@@ -3,6 +3,7 @@
 electrify-me/favicon*
 *.sublime-workspace
 *.zip
+build
 ################################################################################
 
 # Logs
