@@ -1,0 +1,171 @@
+#app {
+    background-color: #fff;
+    background-image: none;
+    font-family: Consolas, monaco, monospace;
+	font-size: 10px;
+}
+.drawer-container-right, .pane-chat, .pane-intro
+{
+	background-color: #fff;
+	background-image: none;
+}
+.pane-header
+{
+	background-color: #fff;
+	background-image: none;
+	height: 35px;
+    border-style: none;
+}
+.pane-chat-body
+{
+	background-color: #fff;
+	background-image: none;
+}
+.pane-chat-footer
+{
+	background-color: #e9e9e9;
+	background-image: none;
+}
+#side, #main
+{
+	border-radius: 0px;
+}
+#window, .app, .btn-more, .btn-plain:hover
+{
+	box-shadow: none;
+}
+.app, .two
+{
+	background-color: transparent;
+	background-repeat: no-repeat;
+}
+.drawer-container-right, .pane-chat, .pane-intro
+{
+	left: 0px;
+	width: 450px;
+}
+.drawer-container-left, .pane-list
+{
+	width: 300px;
+}
+/** Message window */
+.msg
+{
+	margin: 0px;
+	padding: 0px !important;
+}
+.message-text a
+{
+	color: #000;
+    
+}
+.message-out
+{
+	background-color: #fff;
+	box-shadow: none;
+  padding: 0px !important;
+  margin: 0px !important;
+}
+.message-in
+{
+	box-shadow: none;
+}
+.message-out .message-text
+{
+	color: #777 !important;
+}
+.link-preview-container {
+	display: none;	
+}
+.message-system-body
+{
+	background-color: #f1f1f1;
+	box-shadow: none;
+	color: #000;
+}
+.chat-title
+{
+	font-weight: normal;
+}
+.message-author *
+{
+	color: #000;
+	font-size: 10px;
+}
+.message-meta
+{
+	display: none;
+	height: 0px !important;
+}
+/** Input area */
+.input
+{
+	font-size: 12px;
+}
+/** Hiding stuff */
+.chat-avatar
+{
+	display: none;
+}
+.avatar
+{
+	display: none;
+}
+.chat-secondary
+{
+	display: none;
+    padding: 0px !important;
+  margin: 0px !important;
+}
+.chat-main .chat-meta
+{
+    padding: 0px !important;
+  margin: 0px !important;
+}
+.icon-smiley
+{
+	display: none;
+}
+.icon-ptt
+{
+	display: none;
+}
+.image-thumb
+{
+	background: -webkit-linear-gradient(#666, #eee);
+	box-sizing: border-box;
+	height: 10px !important;
+	moz-box-sizing: border-box;
+	width: 10px !important;
+}
+.image-thumb img
+{
+	background-color: aliceblue;
+	height: 10px !important;
+	padding: 10px !important;
+	width: 1px !important;
+}
+.media-state-controls
+{
+	display: none;
+}
+.image-thumb-body
+{
+	background: -webkit-linear-gradient(#666, #eee);
+	box-sizing: border-box;
+	height: 10px !important;
+	moz-box-sizing: border-box;
+	padding: 10px !important;
+	width: 10px !important;
+}
+::-webkit-scrollbar
+{
+	width: 0px!important;
+}
+.message-out:before
+{
+	background: none !important;
+} 
+.emojitext img {
+	display:none;
+}
