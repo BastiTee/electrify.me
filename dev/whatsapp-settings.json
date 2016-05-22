@@ -1,0 +1,11 @@
+{
+  "url": "https://web.whatsapp.com",
+  "cssFile": "dev\\whatsapp-inject.css",
+  "devMode": false,
+  "maximized": false,
+  "httpClient": "https",
+  "uriKey": "https___web_whatsapp_com",
+  "favicoIn": "C:\\development\\repos\\github\\electrify-me\\electrify-me/favicon_https___web_whatsapp_com.ico",
+  "favicoOut": "C:\\development\\repos\\github\\electrify-me\\electrify-me/favicon_https___web_whatsapp_com.png",
+  "faviconUrl": "https://web.whatsapp.com/favicon.ico"
+}

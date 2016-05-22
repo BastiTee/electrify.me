@@ -1,0 +1,11 @@
+{
+  "url": "https://trello.com/b/cEBcoTqe/scopevisio",
+  "cssFile": "dev\\trello-inject.css",
+  "devMode": false,
+  "maximized": true,
+  "httpClient": "https",
+  "uriKey": "https___trello_com_b_cEBcoTqe_scopevisio",
+  "favicoIn": "C:\\development\\repos\\github\\electrify-me\\electrify-me/favicon_https___trello_com_b_cEBcoTqe_scopevisio.ico",
+  "favicoOut": "C:\\development\\repos\\github\\electrify-me\\electrify-me/favicon_https___trello_com_b_cEBcoTqe_scopevisio.png",
+  "faviconUrl": "https://trello.com/favicon.ico"
+}

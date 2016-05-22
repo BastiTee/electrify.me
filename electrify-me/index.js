@@ -12,106 +12,146 @@ function help( message ) {
     console.log("    -c <FILE>   CSS to be injected into website.");
     console.log("    -m          Start maximized.");
     console.log("    -d          Run in development mode.");
+    console.log("    -r <FILE>   Read settings from local file "
+        + "(all other options are ignored).");
+    console.log("    -w <FILE>   Write settings to local file.");
     console.log("    -h          Print this help.");
     console.log("");
     console.log("Example: <electrify> https://web.whatsapp.com "
         + "-c inject.css -d");
     process.exit(0);
-}
+};
 
 // EXTERNAL LIBRARIES AND TOOLS ///////////////////////////////////////////////
 
-const vurl = require('valid-url');
-const minimist = require('minimist')
+const vurl = require("valid-url");
+const minimist = require("minimist")
 const electron = require("electron");
-const exec = require('child_process');
-const http = require('http');
-const https = require('https');
-const favicon = require('favicon');
-const fs = require('fs');
+const exec = require("child_process");
+const http = require("http");
+const https = require("https");
+const favicon = require("favicon");
+const fs = require("fs");
 const app = electron.app;
 const ipc = electron.ipcMain;
-// TODO That's pretty ugly, maybe there is a javascript only ICO 2 PGN
+// TODO That"s pretty ugly, maybe there is a javascript only ICO 2 PGN
 const convert = __dirname + "/ext/imagemagick-windows/convert.exe";
-
-// PARSE COMMAND LINE /////////////////////////////////////////////////////////
-
-const argv = minimist(process.argv.slice(2));
-if ( argv.h != undefined || argv.help != undefined)
-    help();
-
-var url = argv._;
-if (url == undefined || url.length == 0)
-    help("No URL provided.");
-url = String(url);
-if (!vurl.isWebUri(url))
-    help("URI '" + url + "' is malformed.");
-const cssFile = argv.c != undefined ? argv.c : undefined;
-if (cssFile == "" || cssFile == true || cssFile == false)
-    help("CSS option used, but no filepath provided.");
-const devMode = argv.d != undefined ? true : false;
-const maximized = argv.m != undefined ? true : false;
-const httpClient = vurl.isHttpUri(url) ? http : https;
-const uriKey = url.replace(/[^a-zA-Z0-9]/g, "_");
-const favicoIn = __dirname + "/favicon_" + uriKey + ".ico";
-const favicoOut = __dirname + "/favicon_" + uriKey + ".png";
 
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////
 
-var openSplash = function() {
-    var splash = new electron.BrowserWindow({
-        width: 100,
-        height: 100,
-        fullscreen: false,
-        fullscreenable: false,
-        resizable: false,
-        movable: false,
-        frame: false,
-        transparent: true,
-        show: false,
-        webPreferences: {
-            nodeIntegration: false
-        },
-    });
-    splash.loadURL(__dirname + "/splash.html");
-    splash.webContents.on("did-finish-load", function() {
-        splash.show();
-    });
-    return splash;
+var readCmdLine = function(argv) {
+    if ( argv.h != undefined || argv.help != undefined)
+        help();
+    var settings = {};
+
+    // try to read and evaluate settings file..
+    if (argv.r != undefined) {
+        if (argv.r == "" || argv.r == true || argv.r == false) {
+            help("Read-settings option used, but no filepath provided.");
+        }
+        try {
+            settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
+            console.log("Read settings from file " + argv.r
+                + ". Content was:\n" + JSON.stringify(
+                    settings, null, 2));
+        } catch (err) {
+            help (err.message);
+        }
+        return settings;
+    };
+
+    // read and evaluate target url
+    settings.url = argv._;
+    if (settings.url == undefined || settings.url.length == 0)
+        help("No URL provided.");
+    settings.url = String(settings.url);
+    if (!vurl.isWebUri(settings.url))
+         help("URI " + settings.url + " is malformed.");
+
+    // read optional input  files
+    settings.cssFile = argv.c != undefined ? argv.c : undefined;
+    if (settings.cssFile == "" || settings.cssFile == true ||
+        settings.cssFile == false)
+        help("CSS option used, but no filepath provided.");
+    settings.targetSettingsFile = argv.w;
+    if (settings.targetSettingsFile == "" || settings.targetSettingsFile == true ||
+        settings.targetSettingsFile == false) {
+        help("Write-settings option used, but no filepath provided.");
+    }
+
+    // read optional cmd toggles
+    settings.devMode = argv.d != undefined ? true : false;
+    settings.maximized = argv.m != undefined ? true : false;
+
+    // set some internal data
+    settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
+    settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
+    settings.favicoIn = __dirname + "/favicon_" + settings.uriKey + ".ico";
+    settings.favicoOut = __dirname + "/favicon_" + settings.uriKey + ".png";
+
+    return settings;
 };
 
-var getFaviconUrl = function () {
+var openSplash = function() {
     return new Promise(function(resolve, reject) {
-        favicon(url, function(err, favicon_url) {
+        var splash = new electron.BrowserWindow({
+            width: 100,
+            height: 100,
+            fullscreen: false,
+            fullscreenable: false,
+            resizable: false,
+            movable: false,
+            frame: false,
+            transparent: true,
+            show: false,
+            webPreferences: {
+                nodeIntegration: false
+            },
+        });
+        splash.loadURL(__dirname + "/splash.html");
+        splash.webContents.on("did-finish-load", function() {
+            splash.show();
+        });
+        resolve(splash);
+    });
+};
+
+var getFaviconUrl = function (settings) {
+    return new Promise(function(resolve, reject) {
+        favicon(settings.url, function(err, data) {
             if (err != undefined)
                 reject();
-            resolve(favicon_url);
+            settings.faviconUrl = data;
+            resolve(settings);
         });
     });
 };
 
-var getFavicon = function (sourceUrl, targetFile) {
+var getFavicon = function (settings) {
     return new Promise(function(resolve, reject) {
-        var file = fs.createWriteStream(targetFile);
-        var request = httpClient.get(sourceUrl, function(response, err) {
+        var file = fs.createWriteStream(settings.favicoIn);
+        var client = settings.httpClient == "http" ? http : https;
+        var request = client.get(settings.faviconUrl,
+            function(response, err) {
+
             var stream = response.pipe(file);
-            stream.on('finish', function () {
-                resolve();
+            stream.on("finish", function () {
+                resolve(settings);
             });
         });
     });
 };
 
-var convertFaviconToPng = function (sourceFile, targetFile) {
+var convertFaviconToPng = function (settings) {
     return new Promise(function(resolve, reject) {
-        var opts = [sourceFile+"[0]", targetFile ];
+        var opts = [settings.favicoIn+"[0]", settings.favicoOut ];
         exec.execFile(convert, opts, function(err, stdout, stderr) {
-            resolve();
+            resolve(settings);
         });
     });
 };
 
-var setupWebcontent = function (faviconFile, splash) {
+var setupWebcontent = function (settings, splash) {
     return new Promise(function(resolve, reject) {
         const windowSettings = {
             fullscreen: false,
@@ -119,7 +159,7 @@ var setupWebcontent = function (faviconFile, splash) {
             resizable: true,
             movable: true,
             frame: true,
-            icon: faviconFile,
+            icon: settings.favicoOut,
             show: false,
             webPreferences: {
                 nodeIntegration: false
@@ -127,16 +167,16 @@ var setupWebcontent = function (faviconFile, splash) {
         };
         var bw = new electron.BrowserWindow(windowSettings);
         bw.setMenu(null);  // disable default menu
-        if (devMode)
+        if (settings.devMode)
             bw.openDevTools({ detach: true });
-        bw.loadURL(url);
+        bw.loadURL(settings.url);
         bw.on("closed", function() {
             bw = null;
         });
         bw.webContents.on("did-finish-load", function() {
             console.log("All data loaded.");
             splash.destroy();
-            if (maximized)
+            if (settings.maximized)
                 bw.maximize();
             bw.show();
             resolve(bw);
@@ -144,53 +184,78 @@ var setupWebcontent = function (faviconFile, splash) {
     });
 };
 
-var injectCss = function ( bw ) {
+var injectCss = function ( settings, bw ) {
     return new Promise(function(resolve, reject) {
-        if (cssFile == undefined) {
+        if (settings.cssFile == undefined) {
             console.log("No css file provided.");
-            resolve(bw);
+            resolve(settings, bw);
             return;
         } else {
-            console.log("CSS provided at:\n\t" + cssFile)
+            console.log("CSS provided at:\n\t" + settings.cssFile)
         }
-        fs.readFile(cssFile, 'utf8', function (err,data) {
+        fs.readFile(settings.cssFile, "utf8", function (err,data) {
             if (err) {
                 console.log(err);
                 console.log("Could not read provided CSS file. Ignoring.");
-                resolve(bw);
+                resolve(settings, bw);
                 return;
             } else {
                 console.log("CSS data read:\n\t" + data);
             }
             bw.webContents.insertCSS (data);
-            resolve(bw);
+            resolve();
         });
+    });
+};
+
+var storeSettings = function (settings) {
+    return new Promise(function(resolve, reject) {
+        if (settings.targetSettingsFile == undefined) {
+            console.log("Settings will not be saved.");
+            resolve();
+            return;
+        }
+        // keep and remove setting from settings object
+        var targetFile = settings.targetSettingsFile;
+        delete settings.targetSettingsFile;
+        fs.writeFile(targetFile,
+            JSON.stringify(settings, null, 2), "utf-8",
+            function(err) {
+                console.log("Successfully written settings to " + targetFile);
+                resolve();
+            }
+        );
     });
 };
 
 // CORE CONTROLLER ////////////////////////////////////////////////////////////
 
-var startApplication = function() {
-    const splash = openSplash();
-    getFaviconUrl()
-    .then(function(favicon_url) {
-        console.log("Received favicon url:\n\t" + favicon_url);
-        return getFavicon(favicon_url, favicoIn);
+var startApplication = function(settings, splash) {
+
+    openSplash().then(function(data) {
+        console.log("Splash screen loaded.");
+        splash = data;
+        return getFaviconUrl(settings);
     })
     .then(function() {
-        console.log("Downloaded favicon to:\n\t" + favicoIn);
-        return convertFaviconToPng(favicoIn, favicoOut);
+        console.log("Received favicon url:\n\t" + settings.faviconUrl);
+        return getFavicon(settings);
     })
-    .then(function(){
-        console.log("Converted favicon to:\n\t" + favicoOut);
-        return setupWebcontent(favicoOut, splash);
+    .then(function() {
+        console.log("Downloaded favicon to:\n\t" + settings.favicoIn);
+        return convertFaviconToPng(settings);
     })
-    .then(function(bw) {
+    .then(function() {
+        console.log("Converted favicon to:\n\t" + settings.favicoOut);
+        return setupWebcontent(settings, splash);
+    })
+    .then(function(browserWindow) {
         console.log("Preprocessing done.");
-        return injectCss(bw, cssFile);
+        return injectCss(settings, browserWindow);
     })
-    .then(function(bw) {
+    .then(function() {
         console.log("Finished startup sequence.");
+        return storeSettings(settings);
     })
 };
 
@@ -200,6 +265,10 @@ app.on("window-all-closed", function() {
         app.quit();
     }
 });
-app.on("ready", startApplication);
+
+app.on("ready", function() {
+    const argv = minimist(process.argv.slice(2));
+    startApplication(readCmdLine(argv));
+});
 
 })();

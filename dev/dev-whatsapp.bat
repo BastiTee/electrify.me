@@ -1,1 +1,0 @@
-npm start -- https://web.whatsapp.com -c dev\whatsapp-inject.css -d
