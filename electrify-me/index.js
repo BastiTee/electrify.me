@@ -1,29 +1,6 @@
 (function() {
 "use-strict";
 
-// CMD LINE DOCUMENTATION /////////////////////////////////////////////////////
-
-function help( message ) {
-    if (message != undefined)
-        console.log(message);
-    console.log("Usage:   <electrify> [URL] ([OPTS])");
-    console.log("");
-    console.log("Options: ");
-    console.log("    -c <FILE>   CSS to be injected into website.");
-    console.log("    -m          Start maximized.");
-    console.log("    -d          Run in development mode.");
-    console.log("    -r <FILE>   Read settings from local file "
-        + "(all other options are ignored).");
-    console.log("    -w <FILE>   Write settings to local file.");
-    console.log("    -h          Print this help.");
-    console.log("");
-    console.log("Example: <electrify> https://web.whatsapp.com "
-        + "-c inject.css -d");
-    process.exit(0);
-};
-
-// EXTERNAL LIBRARIES AND TOOLS ///////////////////////////////////////////////
-
 const vurl = require("valid-url");
 const minimist = require("minimist")
 const electron = require("electron");
@@ -110,14 +87,21 @@ var openSplash = function() {
         });
         splash.loadURL(__dirname + "/splash.html");
         splash.webContents.on("did-finish-load", function() {
+            resolve(splash);
             splash.show();
         });
-        resolve(splash);
     });
 };
 
 var getFaviconUrl = function (settings) {
     return new Promise(function(resolve, reject) {
+
+        // skip on existing png icon file
+        if (fileExists( settings.favicoOut )) {
+            resolve();
+            return;
+        }
+
         favicon(settings.url, function(err, data) {
             if (err != undefined)
                 reject();
@@ -129,6 +113,11 @@ var getFaviconUrl = function (settings) {
 
 var getFavicon = function (settings) {
     return new Promise(function(resolve, reject) {
+        // skip on existing png icon file
+        if (fileExists( settings.favicoOut )) {
+            resolve();
+            return;
+        }
         var file = fs.createWriteStream(settings.favicoIn);
         var client = settings.httpClient == "http" ? http : https;
         var request = client.get(settings.faviconUrl,
@@ -144,6 +133,11 @@ var getFavicon = function (settings) {
 
 var convertFaviconToPng = function (settings) {
     return new Promise(function(resolve, reject) {
+        // skip on existing png icon file
+        if (fileExists( settings.favicoOut )) {
+            resolve();
+            return;
+        }
         var opts = [settings.favicoIn+"[0]", settings.favicoOut ];
         exec.execFile(convert, opts, function(err, stdout, stderr) {
             resolve(settings);
@@ -256,7 +250,7 @@ var startApplication = function(settings, splash) {
     .then(function() {
         console.log("Finished startup sequence.");
         return storeSettings(settings);
-    })
+    });
 };
 
 // CORE EVENTS ////////////////////////////////////////////////////////////////
@@ -270,5 +264,38 @@ app.on("ready", function() {
     const argv = minimist(process.argv.slice(2));
     startApplication(readCmdLine(argv));
 });
+
+// HELPER FUNCTIONS ///////////////////////////////////////////////////////////
+
+function help( message ) {
+    if (message != undefined)
+        console.log(message);
+    console.log("Usage:   <electrify> [URL] ([OPTS])");
+    console.log("");
+    console.log("Options: ");
+    console.log("    -c <FILE>   CSS to be injected into website.");
+    console.log("    -m          Start maximized.");
+    console.log("    -d          Run in development mode.");
+    console.log("    -r <FILE>   Read settings from local file "
+        + "(all other options are ignored).");
+    console.log("    -w <FILE>   Write settings to local file.");
+    console.log("    -h          Print this help.");
+    console.log("");
+    console.log("Example: <electrify> https://web.whatsapp.com "
+        + "-c inject.css -d");
+    process.exit(0);
+};
+
+function fileExists ( filename ) {
+    try {
+        fs.accessSync(filename, fs.F_OK | fs.R_OK);
+        var stat = fs.statSync(filename);
+        if (stat["size"] == 0)
+            return false;
+        return true;
+    } catch (err) {
+        return false;
+    }
+};
 
 })();
