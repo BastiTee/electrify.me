@@ -59,6 +59,7 @@ var readCmdLine = function(argv) {
     // read optional cmd toggles
     settings.devMode = argv.d != undefined ? true : false;
     settings.maximized = argv.m != undefined ? true : false;
+    settings.showFrame = argv.f != undefined ? false : true;
 
     // set some internal data
     settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
@@ -152,7 +153,7 @@ var setupWebcontent = function (settings, splash) {
             fullscreenable: true,
             resizable: true,
             movable: true,
-            frame: true,
+            frame: settings.showFrame,
             icon: settings.favicoOut,
             show: false,
             webPreferences: {
@@ -274,7 +275,8 @@ function help( message ) {
     console.log("");
     console.log("Options: ");
     console.log("    -c <FILE>   CSS to be injected into website.");
-    console.log("    -m          Start maximized.");
+    console.log("    -m          Window maximized.");
+    console.log("    -f          No window frame.");
     console.log("    -d          Run in development mode.");
     console.log("    -r <FILE>   Read settings from local file "
         + "(all other options are ignored).");
