@@ -22,6 +22,7 @@ var readCmdLine = function(argv) {
     var settings = {};
 
     // try to read and evaluate settings file..
+    var readSettingsFromFile = false;
     if (argv.r != undefined) {
         if (argv.r == "" || argv.r == true || argv.r == false) {
             help("Read-settings option used, but no filepath provided.");
@@ -31,19 +32,34 @@ var readCmdLine = function(argv) {
             console.log("Read settings from file " + argv.r
                 + ". Content was:\n" + JSON.stringify(
                     settings, null, 2));
+            console.log("For all possible window options refer to " +
+                "http://electron.atom.io/docs/api/browser-window/#class-" +
+                "browserwindow !! WARNING !! Parameters icon, show, and " +
+                "webPreferences will always be overwritten!");
         } catch (err) {
             help (err.message);
         }
-        return settings;
+        readSettingsFromFile = true;
     };
 
-    // read and evaluate target url
-    settings.url = argv._;
-    if (settings.url == undefined || settings.url.length == 0)
-        help("No URL provided.");
-    settings.url = String(settings.url);
-    if (!vurl.isWebUri(settings.url))
-         help("URI " + settings.url + " is malformed.");
+    if (!readSettingsFromFile) {
+        // read and evaluate target url
+        settings.url = argv._;
+        if (settings.url == undefined || settings.url.length == 0)
+            help("No URL provided.");
+        settings.url = String(settings.url);
+        if (!vurl.isWebUri(settings.url))
+             help("URI " + settings.url + " is malformed.");
+    }
+
+    // set some internal settings
+    settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
+    settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
+    settings.favicoIn = __dirname + "/favicon_" + settings.uriKey + ".ico";
+    settings.favicoOut = __dirname + "/favicon_" + settings.uriKey + ".png";
+
+    if (readSettingsFromFile) // don't parse cmd line in this case
+        return settings;
 
     // read optional input  files
     settings.cssFile = argv.c != undefined ? argv.c : undefined;
@@ -59,13 +75,15 @@ var readCmdLine = function(argv) {
     // read optional cmd toggles
     settings.devMode = argv.d != undefined ? true : false;
     settings.maximized = argv.m != undefined ? true : false;
-    settings.showFrame = argv.f != undefined ? false : true;
 
-    // set some internal data
-    settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
-    settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
-    settings.favicoIn = __dirname + "/favicon_" + settings.uriKey + ".ico";
-    settings.favicoOut = __dirname + "/favicon_" + settings.uriKey + ".png";
+    // default window settings
+    settings.windowSettings = {
+        fullscreen: false,
+        fullscreenable: true,
+        resizable: true,
+        movable: true,
+        frame: true,
+    };
 
     return settings;
 };
@@ -148,19 +166,14 @@ var convertFaviconToPng = function (settings) {
 
 var setupWebcontent = function (settings, splash) {
     return new Promise(function(resolve, reject) {
-        const windowSettings = {
-            fullscreen: false,
-            fullscreenable: true,
-            resizable: true,
-            movable: true,
-            frame: settings.showFrame,
-            icon: settings.favicoOut,
-            show: false,
-            webPreferences: {
+        // append internal window settings
+        settings.windowSettings.icon = settings.favicoOut;
+        settings.windowSettings.webPreferences = {
                 nodeIntegration: false
-            },
-        };
-        var bw = new electron.BrowserWindow(windowSettings);
+            };
+        settings.windowSettings.show = false;
+
+        var bw = new electron.BrowserWindow(settings.windowSettings);
         bw.setMenu(null);  // disable default menu
         if (settings.devMode)
             bw.openDevTools({ detach: true });
@@ -195,7 +208,7 @@ var injectCss = function ( settings, bw ) {
                 resolve(settings, bw);
                 return;
             } else {
-                console.log("CSS data read:\n\t" + data);
+                //console.log("CSS data read:\n\t" + data);
             }
             bw.webContents.insertCSS (data);
             resolve();
@@ -210,9 +223,18 @@ var storeSettings = function (settings) {
             resolve();
             return;
         }
-        // keep and remove setting from settings object
+
         var targetFile = settings.targetSettingsFile;
+        // delete internal settings
         delete settings.targetSettingsFile;
+        delete settings.windowSettings.icon;
+        delete settings.windowSettings.webPreferences;
+        delete settings.windowSettings.show;
+        delete settings.httpClient;
+        delete settings.uriKey;
+        delete settings.favicoIn;
+        delete settings.favicoOut;
+
         fs.writeFile(targetFile,
             JSON.stringify(settings, null, 2), "utf-8",
             function(err) {
@@ -226,6 +248,10 @@ var storeSettings = function (settings) {
 // CORE CONTROLLER ////////////////////////////////////////////////////////////
 
 var startApplication = function(settings, splash) {
+
+    console.log("=== SETTINGS ===");
+    console.log(JSON.stringify(settings, null, 4));
+    console.log("================");
 
     openSplash().then(function(data) {
         console.log("Splash screen loaded.");
@@ -276,7 +302,6 @@ function help( message ) {
     console.log("Options: ");
     console.log("    -c <FILE>   CSS to be injected into website.");
     console.log("    -m          Window maximized.");
-    console.log("    -f          No window frame.");
     console.log("    -d          Run in development mode.");
     console.log("    -r <FILE>   Read settings from local file "
         + "(all other options are ignored).");
