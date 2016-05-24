@@ -4,10 +4,16 @@
   "devMode": false,
   "maximized": false,
   "windowSettings": {
+    "width": 650,
+    "height": 600,
+    "center": false,
+    "x": 3170,
+    "y": 460,
     "fullscreen": false,
-    "fullscreenable": true,
-    "resizable": true,
+    "fullscreenable": false,
+    "resizable": false,
     "movable": true,
-    "frame": false
+    "frame": false,
+    "minimizable": true
   }
 }
