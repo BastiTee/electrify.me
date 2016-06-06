@@ -1,102 +1,86 @@
 <html>
 <head>
  <meta charset="utf-8">
+ <link href='https://fonts.googleapis.com/css?family=Nova+Mono' rel='stylesheet' type='text/css'>
  <style>
-    .sk-folding-cube {
-      margin: 20px auto;
-      width: 40px;
-      height: 40px;
-      position: relative;
-      -webkit-transform: rotateZ(45deg);
-      transform: rotateZ(45deg);
+
+  #logo {
+    background: #082330;
+    font: 16em/1 'Nova mono';
+    width: 350px;
+    box-shadow: 0 10px 16px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19) !important;
+     border-radius: 50px;
+  }
+  .text--line {
+    font-family: 'Nova mono';
+    font-size: .5em;
   }
 
-  .sk-folding-cube .sk-cube {
-      float: left;
-      width: 50%;
-      height: 50%;
-      position: relative;
-      -webkit-transform: scale(1.1);
-      -ms-transform: scale(1.1);
-      transform: scale(1.1);
+  .text-copy {
+    fill: none;
+    stroke-dasharray: 7% 28%;
+    stroke-width: 3px;
+    -webkit-animation: stroke-offset 2.5s infinite linear;
+
   }
-  .sk-folding-cube .sk-cube:before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #008BBA;
-      -webkit-animation: sk-foldCubeAngle 2.4s infinite linear both;
-      animation: sk-foldCubeAngle 2.4s infinite linear both;
-      -webkit-transform-origin: 100% 100%;
-      -ms-transform-origin: 100% 100%;
-      transform-origin: 100% 100%;
+  .text-copy:nth-child(1) {
+    stroke: #75b9be;
+    stroke-dashoffset: 7%;
   }
-  .sk-folding-cube .sk-cube2 {
-      -webkit-transform: scale(1.1) rotateZ(90deg);
-      transform: scale(1.1) rotateZ(90deg);
+  .text-copy:nth-child(2) {
+    stroke: #a8ccc9;
+    stroke-dashoffset: 14%;
   }
-  .sk-folding-cube .sk-cube3 {
-      -webkit-transform: scale(1.1) rotateZ(180deg);
-      transform: scale(1.1) rotateZ(180deg);
+  .text-copy:nth-child(3) {
+    stroke: #b3d6c6;
+    stroke-dashoffset: 21%;
   }
-  .sk-folding-cube .sk-cube4 {
-      -webkit-transform: scale(1.1) rotateZ(270deg);
-      transform: scale(1.1) rotateZ(270deg);
+  .text-copy:nth-child(4) {
+    stroke: #dceab2;
+    stroke-dashoffset: 28%;
   }
-  .sk-folding-cube .sk-cube2:before {
-      -webkit-animation-delay: 0.3s;
-      animation-delay: 0.3s;
+  .text-copy:nth-child(5) {
+    stroke: #c7d66d;
+    stroke-dashoffset: 35%;
   }
-  .sk-folding-cube .sk-cube3:before {
-      -webkit-animation-delay: 0.6s;
-      animation-delay: 0.6s;
-  }
-  .sk-folding-cube .sk-cube4:before {
-      -webkit-animation-delay: 0.9s;
-      animation-delay: 0.9s;
-  }
-  @-webkit-keyframes sk-foldCubeAngle {
-      0%, 10% {
-        -webkit-transform: perspective(140px) rotateX(-180deg);
-        transform: perspective(140px) rotateX(-180deg);
-        opacity: 0;
-    } 25%, 75% {
-        -webkit-transform: perspective(140px) rotateX(0deg);
-        transform: perspective(140px) rotateX(0deg);
-        opacity: 1;
-    } 90%, 100% {
-        -webkit-transform: perspective(140px) rotateY(180deg);
-        transform: perspective(140px) rotateY(180deg);
-        opacity: 0;
+
+  @-webkit-keyframes stroke-offset {
+    50% {
+      stroke-dashoffset: 35%;
+      stroke-dasharray: 0 87.5%;
     }
-}
+  }
 
-@keyframes sk-foldCubeAngle {
-  0%, 10% {
-    -webkit-transform: perspective(140px) rotateX(-180deg);
-    transform: perspective(140px) rotateX(-180deg);
-    opacity: 0;
-} 25%, 75% {
-    -webkit-transform: perspective(140px) rotateX(0deg);
-    transform: perspective(140px) rotateX(0deg);
-    opacity: 1;
-} 90%, 100% {
-    -webkit-transform: perspective(140px) rotateY(180deg);
-    transform: perspective(140px) rotateY(180deg);
-    opacity: 0;
-}
-}
+  @keyframes stroke-offset {
+    50% {
+      stroke-dashoffset: 35%;
+      stroke-dasharray: 0 87.5%;
+    }
+  }
 </style>
 </head>
 <body>
-    <div class="sk-folding-cube">
-      <div class="sk-cube1 sk-cube"></div>
-      <div class="sk-cube2 sk-cube"></div>
-      <div class="sk-cube4 sk-cube"></div>
-      <div class="sk-cube3 sk-cube"></div>
+  <div id="logo">
+    <svg id="logosvg" viewBox="0 0 865 145">
+      <symbol id="s-text">
+        <text  x="0" y="110" class="text--line">
+          eιectrify·me
+        </text>
+      </symbol>
+
+      <g class="g-ants">
+        <use xlink:href="#s-text"
+        class="text-copy"></use>
+        <use xlink:href="#s-text"
+        class="text-copy"></use>
+        <use xlink:href="#s-text"
+        class="text-copy"></use>
+        <use xlink:href="#s-text"
+        class="text-copy"></use>
+        <use xlink:href="#s-text"
+        class="text-copy"></use>
+      </g>
+    </svg>
   </div>
 </body>
 </html>

@@ -93,7 +93,7 @@ var readCmdLine = function(argv) {
 var openSplash = function() {
     return new Promise(function(resolve, reject) {
         var splash = new electron.BrowserWindow({
-            width: 100,
+            width: 500,
             height: 100,
             fullscreen: false,
             fullscreenable: false,

@@ -1,4 +1,4 @@
-# electrify.me
+![Electrify-Logo](electrify-me/electrify-logo.png)
 > Create a native-like app from a website. Just like that.
 
 ![build](https://img.shields.io/badge/build-probably%20broken-orange.svg)
@@ -18,7 +18,7 @@ Example sentence: `Johnny would like to electrify whatsapp, so that it's availab
 
 ## Usage
 
-Quick start: 
+Quick start:
 
 ```
 npm install
