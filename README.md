@@ -1,4 +1,4 @@
-![Electrify-Logo](dev/logo+text.html)
+![Electrify-Logo](dev/logo+text.png)
 > Create a native-like app from a website. Just like that.
 
 [![GitHub release](https://img.shields.io/badge/version-0.1.1-green.svg)](https://github.com/BastiTee/electrify.me/releases/tag/0.1.1)
