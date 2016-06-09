@@ -1,12 +1,12 @@
-![Electrify-Logo](electrify-me/electrify-logo.png)
+![Electrify-Logo](dev/logo+text.html)
 > Create a native-like app from a website. Just like that.
 
-[![GitHub release](https://img.shields.io/badge/version-0.1.0-green.svg)](https://github.com/BastiTee/electrify.me/releases/tag/0.1.0)
-## About 
+[![GitHub release](https://img.shields.io/badge/version-0.1.1-green.svg)](https://github.com/BastiTee/electrify.me/releases/tag/0.1.1)
+## About
 
-*electrify.me* is a small tool to run a website as native-like windows, mac or linux application. Electrified websites are available in your task bar, start menu or launchers. Just like a native application. 
+*electrify.me* is a small tool to run a website as native-like windows, mac or linux application. Electrified websites are available in your task bar, start menu or launchers. Just like a native application.
 
-You can customize the apperance of your electrified website by injecting CSS into the website, start the app in kiosk mode, open it at specific window positions [and much more](http://electron.atom.io/docs/api/browser-window/#new-browserwindowoptions). 
+You can customize the apperance of your electrified website by injecting CSS into the website, start the app in kiosk mode, open it at specific window positions [and much more](http://electron.atom.io/docs/api/browser-window/#new-browserwindowoptions).
 
 ![Screenshot](dev/screenshot.png)
 
@@ -19,7 +19,7 @@ You can customize the apperance of your electrified website by injecting CSS int
 >> npm start -- https://web.whatsapp.com
 ```
 
-### Options 
+### Options
 
 For details on options etc. run:
 
@@ -39,7 +39,7 @@ Options:
 Example: <electrify> https://web.whatsapp.com -c inject.css -d
 ```
 
-### Settings file 
+### Settings file
 
 The setting file that you can read/write via the command-line options will look something like this:
 
@@ -63,7 +63,7 @@ The setting file that you can read/write via the command-line options will look 
 |-------------|------------|
 | url | The URL you want to electrify |
 | devMode | If  true, opens the chromium devevelopment console on startup |
-| maximized | If true, opens the window maximized | 
+| maximized | If true, opens the window maximized |
 | windowSettings | Fine-grained [Electron window settings](http://electron.atom.io/docs/api/browser-window/#new-browserwindowoptions) (Attention: Parameters icon, show, and webPreferences will always be overwritten) |
 | faviconUrl | Auto-detected path to favicon of website |
 
@@ -89,10 +89,13 @@ or
 **Installing**
 
 - [ ] Create executable packages
-- [ ] Create installer packages 
+- [ ] Create installer packages
 
 ## Licence and attributions
 
-This small tool is powered by the awesome [Electron framework](http://electron.atom.io/).
+Icon made by [Freepik](http://www.flaticon.com/authors/freepik) from [www.flaticon.com](http://www.flaticon.com/free-icon/light-bulb_125292)
 
 Code is licensed under GPLv3.
+
+This small tool is powered by the awesome [Electron framework](http://electron.atom.io/).
+

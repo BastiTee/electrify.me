@@ -1,84 +1,11 @@
 <html>
 <head>
     <meta charset="utf-8">
+     <link href="https://fonts.googleapis.com/css?family=Nova+Mono" rel="stylesheet" type="text/css">
     <style>
         #logo {
-            /*width: 200px;*/
             width: 100px;
-        }
-        @keyframes fill-bulb-left {
-            0% {
-                fill: #fff;
-            }
-            50% {
-                fill: #fff;
-            }
-            100% {
-                fill: #F1C40F;
-            }
-        }
-
-        @keyframes fill-bulb-right {
-            0% {
-                fill: #fff;
-            }
-            50% {
-                fill: #ddd;
-            }
-            100% {
-                fill: #F9A025;
-            }
-        }
-
-        @keyframes fill-background {
-            0% {
-                fill: #fff;
-            }
-            100% {
-                fill: #E83709;
-            }
-        }
-
-        @keyframes fill-bulb-shadow {
-            0% {
-                fill: #fff;
-            }
-            100% {
-                fill: #C20A00;
-            }
-        }
-
-        @keyframes fill-socket-left {
-            0% {
-                fill: #fff;
-            }
-            100% {
-                fill: #58301E;
-            }
-        }
-
-        @keyframes shadow-fade {
-            0% {
-                -webkit-filter: drop-shadow( 0px  0px 7px #fff );
-            }
-            100% {
-                -webkit-filter: drop-shadow( 0px  0px 7px #777 );
-            }
-        }
-
-        .shadow {
-            -webkit-filter: drop-shadow( 0px  0px 7px #777 );
-            animation-name: shadow-fade;
-            animation-duration: 4s;
-        }
-
-        @keyframes fill-socket-right {
-            0% {
-                fill: #fff;
-            }
-            100% {
-                fill: #3B2314;
-            }
+            float:left;
         }
         #background {
             fill: #E83709;
@@ -125,10 +52,18 @@
             fill: #FFFFFF;
         }
 
+        #logo-text {
+            float:left;
+            font-family: "Nova mono";
+            font-size: 4em;
+            fill: #E83709;
+            margin: 0px 0px 0px 10px;
+            /*border: 1px solid black;*/
+        }
     </style>
 </head>
 <body>
-  <div id="logo">
+ <div id="logo">
 <svg class="shadow" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
 	viewBox="0 0 511.998 512" >
     <g>
@@ -162,6 +97,11 @@
         </g>
     </g>
 </svg>
-  </div>
+</div>
+<div id="logo-text">
+<svg height="100" width="450">
+  <text x="0" y="70" >eιectrify·me</text>
+</svg>
+</div>
 </body>
 </html>
