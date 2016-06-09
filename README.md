@@ -4,7 +4,7 @@
 [![GitHub release](https://img.shields.io/badge/version-0.1.1-green.svg)](https://github.com/BastiTee/electrify.me/releases/tag/0.1.1)
 ## About
 
-*electrify.me* is a small tool to run a website as native-like windows, mac or linux application. Electrified websites are available in your task bar, start menu or launchers. Just like a native application.
+*electrify.me* is a tool to run a website as native-like windows, mac or linux application. Electrified websites are available in your task bar, start menu or launchers. Just like a native application.
 
 You can customize the apperance of your electrified website by injecting CSS into the website, start the app in kiosk mode, open it at specific window positions [and much more](http://electron.atom.io/docs/api/browser-window/#new-browserwindowoptions).
 
