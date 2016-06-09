@@ -72,7 +72,7 @@ The setting file that you can read/write via the command-line options will look 
 
 ### Current To-Dos
 
-*Favicon extraction*
+**Favicon extraction**
 
 - [ ] Add an imagemagick build for linux systems to support ico-2-png conversion for it.
 - [ ] Add an imagemagick build for mac systems to support ico-2-png conversion for it.
@@ -85,7 +85,7 @@ or
 
 - [ ] Wait for electron to [support ICO files](https://github.com/electron/electron/issues/2277)
 
-*Installing*
+**Installing**
 
 - [ ] Create executable packages
 - [ ] Create installer packages 
