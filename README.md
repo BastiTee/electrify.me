@@ -19,6 +19,9 @@ You can customize the apperance of your electrified website by injecting CSS int
 >> npm start -- https://web.whatsapp.com
 ```
 
+Limitation: On linux and mac you need to have "convert" (part of imagemagick) 
+on your system path to support favicon-to-appicon conversion (see below for details).
+
 ### Options
 
 For details on options etc. run:
@@ -74,6 +77,10 @@ The setting file that you can read/write via the command-line options will look 
 ### Current To-Dos
 
 **Favicon extraction**
+
+Favicon extraction is still somewhat shaky. The reason is that icon files are not supported by 
+electron and that there is no non-native way to convert ico to png. Currently imagemagick/convert is used. 
+So further work would be:
 
 - [ ] Add an imagemagick build for linux systems to support ico-2-png conversion for it.
 - [ ] Add an imagemagick build for mac systems to support ico-2-png conversion for it.

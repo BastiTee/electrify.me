@@ -6,7 +6,7 @@
   "style": "electrify-me/style.css",
   "main": "electrify-me/index.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron --enable-transparent-visuals --disable-gpu . "
   },
   "repository": {
     "type": "git",

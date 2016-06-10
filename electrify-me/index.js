@@ -9,10 +9,9 @@ const http = require("http");
 const https = require("https");
 const favicon = require("favicon");
 const fs = require("fs");
+const os = require("os");
 const app = electron.app;
 const ipc = electron.ipcMain;
-// TODO That"s pretty ugly, maybe there is a javascript only ICO 2 PGN
-const convert = __dirname + "/ext/imagemagick-windows/convert.exe";
 
 ///////////////////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////
@@ -93,8 +92,8 @@ var readCmdLine = function(argv) {
 var openSplash = function() {
     return new Promise(function(resolve, reject) {
         var splash = new electron.BrowserWindow({
-            width: 150,
-            height: 150,
+            width: 117,
+            height: 117,
             fullscreen: false,
             fullscreenable: false,
             resizable: false,
@@ -106,7 +105,7 @@ var openSplash = function() {
                 nodeIntegration: false
             },
         });
-        splash.loadURL(__dirname + "/splash.html");
+        splash.loadURL("file://" + __dirname + "/splash.html");
         splash.webContents.on("did-finish-load", function() {
             resolve(splash);
             splash.show();
@@ -143,12 +142,18 @@ var getFavicon = function (settings) {
         var client = settings.httpClient == "http" ? http : https;
         var request = client.get(settings.faviconUrl,
             function(response, err) {
-
+	    if (err) {
+		console.log(err);
+	     }
             var stream = response.pipe(file);
             stream.on("finish", function () {
                 resolve(settings);
             });
         });
+	request.setTimeout( 10000, function( ) {
+	    console.log("Request to download favicon timed out!!");
+	resolve(settings);
+	});
     });
 };
 
@@ -159,8 +164,23 @@ var convertFaviconToPng = function (settings) {
             resolve();
             return;
         }
+	
+	var convert = "convertt";
+       console.log("Platform: " + os.platform() + "-" + os.arch());
+        if (os.platform() === "win32" &&
+            (os.arch() === "x64" || os.arch() === "ia32")) {
+            convert = __dirname + "/ext/imagemagick-windows/convert.exe";
+        } else {	
+	    convert = "convert";
+            console.log("No built-in resize backend for this platform present. Using default.");
+        }
+
         var opts = [settings.favicoIn+"[0]", settings.favicoOut ];
         exec.execFile(convert, opts, function(err, stdout, stderr) {
+	    if (err) {
+		console.log("Could not generate pgn. will skip this step!");
+		resolve(settings);
+	    }
             resolve(settings);
         });
     });
