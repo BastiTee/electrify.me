@@ -22,6 +22,13 @@ You can customize the apperance of your electrified website by injecting CSS int
 Limitation: On linux and mac you need to have "convert" (part of imagemagick) 
 on your system path to support favicon-to-appicon conversion (see below for details).
 
+On windows you can also start the app using
+
+```
+>> npm install
+>> electrify.bat https://web.whatsapp.com
+```
+
 ### Options
 
 For details on options etc. run:

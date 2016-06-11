@@ -1,0 +1,12 @@
+{
+  "url": "https://web.whatsapp.com",
+  "devMode": false,
+  "maximized": false,
+  "windowSettings": {
+    "fullscreen": false,
+    "fullscreenable": true,
+    "resizable": true,
+    "movable": true,
+    "frame": true
+  }
+}
