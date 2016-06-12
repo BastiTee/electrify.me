@@ -1,2 +1,2 @@
 @echo off
-git archive -o electrify.me-latest.zip HEAD
+git archive -9 -o electrify.me-latest.zip HEAD
