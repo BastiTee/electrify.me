@@ -3,6 +3,8 @@
 electrify-me/favicon*
 *.sublime-workspace
 *.zip
+*.lnk
+*.settings.txt
 build
 ################################################################################
 

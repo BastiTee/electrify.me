@@ -15,7 +15,6 @@
   "license": "GPL-3.0",
   "dependencies": {
     "electron-prebuilt": "1.0.1",
-    "exec": "^0.2.1",
     "favicon": "0.0.2",
     "minimist": "^1.2.0",
     "valid-url": "^1.0.9"

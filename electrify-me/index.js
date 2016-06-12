@@ -9,9 +9,11 @@ const http = require("http");
 const https = require("https");
 const favicon = require("favicon");
 const fs = require("fs");
+const path = require("path");
 const os = require("os");
 const app = electron.app;
 const ipc = electron.ipcMain;
+const __parentDirname = path.resolve(__dirname, '..');
 
 ///////////////////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////
@@ -49,6 +51,7 @@ var readCmdLine = function(argv) {
         if (settings.url == undefined || settings.url.length == 0)
             help("No URL provided.");
         settings.url = String(settings.url);
+
         if (!vurl.isWebUri(settings.url))
              help("URI " + settings.url + " is malformed.");
     }
@@ -67,12 +70,6 @@ var readCmdLine = function(argv) {
     if (settings.cssFile == "" || settings.cssFile == true ||
         settings.cssFile == false)
         help("CSS option used, but no filepath provided.");
-    settings.targetSettingsFile = argv.w;
-    if (settings.targetSettingsFile == "" || settings.targetSettingsFile == true ||
-        settings.targetSettingsFile == false) {
-        help("Write-settings option used, but no filepath provided.");
-    }
-
     // read optional cmd toggles
     settings.devMode = argv.d != undefined ? true : false;
     settings.maximized = argv.m != undefined ? true : false;
@@ -92,8 +89,8 @@ var readCmdLine = function(argv) {
 var openSplash = function() {
     return new Promise(function(resolve, reject) {
         var splash = new electron.BrowserWindow({
-            width: 117,
-            height: 117,
+            width: 120,
+            height: 120,
             fullscreen: false,
             fullscreenable: false,
             resizable: false,
@@ -164,23 +161,24 @@ var convertFaviconToPng = function (settings) {
             resolve();
             return;
         }
-	
-	var convert = "convertt";
-       console.log("Platform: " + os.platform() + "-" + os.arch());
+
+        var convert = "convert";
+        console.log("Platform: " + os.platform() + "-" + os.arch());
         if (os.platform() === "win32" &&
             (os.arch() === "x64" || os.arch() === "ia32")) {
             convert = __dirname + "/ext/imagemagick-windows/convert.exe";
-        } else {	
-	    convert = "convert";
-            console.log("No built-in resize backend for this platform present. Using default.");
+        } else {
+            console.log("No built-in resize backend for this platform " +
+                "present. Will try to use default.");
         }
 
         var opts = [settings.favicoIn+"[0]", settings.favicoOut ];
         exec.execFile(convert, opts, function(err, stdout, stderr) {
-	    if (err) {
-		console.log("Could not generate pgn. will skip this step!");
-		resolve(settings);
-	    }
+            if (err) {
+                console.log("Could not generate pgn. Will skip this step. "
+                    + err.message);
+                resolve(settings);
+            }
             resolve(settings);
         });
     });
@@ -240,15 +238,47 @@ var injectCss = function ( settings, bw ) {
 
 var storeSettings = function (settings) {
     return new Promise(function(resolve, reject) {
-        if (settings.targetSettingsFile == undefined) {
-            console.log("Settings will not be saved.");
-            resolve();
-            return;
+
+        console.log("Platform: " + os.platform() + "-" + os.arch());
+        var symlink = undefined;
+        if (os.platform() === "win32" &&
+            (os.arch() === "x64" || os.arch() === "ia32")) {
+            symlink = __dirname + "\\ext\\shortcut-windows.bat";
+        } else {
+            console.log("No built-in symlink backend for this platform " +
+                "present.");
         }
 
-        var targetFile = settings.targetSettingsFile;
+        var domain = settings.url.split("/")[2];
+        var symlinkFile = __parentDirname + "\\electrify-" + domain + ".lnk";
+        var settingsFile =  __parentDirname + "\\electrify-" +
+            domain + ".settings.txt";
+
+        var opts = [
+                "-linkfile",
+                symlinkFile,
+                "-target",
+                __parentDirname +
+                "\\node_modules\\electron-prebuilt\\dist\\electron.exe",
+                "-workdir",
+                __parentDirname,
+                "-linkarguments",
+                "electrify-me -r " + settingsFile,
+                "-description",
+                "Electrify " + domain,
+                "-iconlocation",
+                settings.favicoIn
+            ];
+
+        console.log(opts);
+
+        exec.execFile(symlink, opts, function(err, stdout, stderr) {
+            if (err) {
+                console.log("Could not generate symlink. " + err.message);
+            }
+        });
+
         // delete internal settings
-        delete settings.targetSettingsFile;
         delete settings.windowSettings.icon;
         delete settings.windowSettings.webPreferences;
         delete settings.windowSettings.show;
@@ -257,15 +287,18 @@ var storeSettings = function (settings) {
         delete settings.favicoIn;
         delete settings.favicoOut;
 
-        fs.writeFile(targetFile,
+        fs.writeFile(settingsFile,
             JSON.stringify(settings, null, 2), "utf-8",
             function(err) {
-                console.log("Successfully written settings to " + targetFile);
-                resolve();
+                console.log("Successfully written settings to "
+                    + settingsFile);
             }
         );
+
+        resolve(settings);
     });
 };
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // CORE CONTROLLER ////////////////////////////////////////////////////////////
@@ -301,6 +334,9 @@ var startApplication = function(settings, splash) {
     .then(function() {
         console.log("Finished startup sequence.");
         return storeSettings(settings);
+    })
+    .then(function() {
+        console.log("Settings stored.");
     });
 };
 
@@ -334,7 +370,6 @@ function help( message ) {
     console.log("    -d          Run in development mode.");
     console.log("    -r <FILE>   Read settings from local file "
         + "(all other options are ignored).");
-    console.log("    -w <FILE>   Write settings to local file.");
     console.log("    -h          Print this help.");
     console.log("");
     console.log("Example: <electrify> https://web.whatsapp.com "

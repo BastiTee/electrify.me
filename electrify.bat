@@ -11,5 +11,4 @@ echo ELECTRON - %ELECTRON%
 echo APP      - %APP%
 echo COMMAND  - %ELECTRON% %APP% %*
 
-start /D %SCRIPT_PATH% %ELECTRON% %APP% %*
-exit 0
+%ELECTRON% %APP% %*
