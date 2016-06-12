@@ -6,8 +6,6 @@ SET APP=%SCRIPT_PATH:~0,-1%\electrify-me
 
 cd %SCRIPT_PATH%
 
-npm install
-
 echo SCRIPT   - %SCRIPT_PATH%
 echo ELECTRON - %ELECTRON%
 echo APP      - %APP%
