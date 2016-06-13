@@ -1,14 +1,19 @@
-@echo off
+@ECHO off
 
 SET SCRIPT_PATH=%~dp0
 SET ELECTRON=%SCRIPT_PATH:~0,-1%\node_modules\electron-prebuilt\dist\electron.exe
 SET APP=%SCRIPT_PATH:~0,-1%\electrify-me
 
-cd %SCRIPT_PATH%
+CD %SCRIPT_PATH%
 
-echo SCRIPT   - %SCRIPT_PATH%
-echo ELECTRON - %ELECTRON%
-echo APP      - %APP%
-echo COMMAND  - %ELECTRON% %APP% %*
+IF NOT EXIST %ELECTRON% (
+	ECHO Electron not yet installed. Will run npm...
+	CALL npm install
+) 
 
-start %ELECTRON% %APP% %*
+ECHO SCRIPT   - %SCRIPT_PATH%
+ECHO ELECTRON - %ELECTRON%
+ECHO APP      - %APP%
+ECHO COMMAND  - %ELECTRON% %APP% %*
+
+START %ELECTRON% %APP% %*

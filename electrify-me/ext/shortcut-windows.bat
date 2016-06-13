@@ -1,7 +1,7 @@
 @if (@X)==(@Y) @end /* JScript comment
 @echo off
-
-cscript //E:JScript //nologo "%~f0" "%~nx0" %*
+pushd %~dp0
+start /b "" cscript //E:JScript //nologo "%~f0" "%~nx0" %*
 
 exit /b %errorlevel%
 @if (@X)==(@Y) @end JScript comment */
