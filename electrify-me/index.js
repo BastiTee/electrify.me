@@ -299,10 +299,10 @@ var storeSettings = function (settings) {
             .replace(/.*\./, "");
         pageName = pageName.charAt(0).toUpperCase() + pageName.slice(1);
 
-        var symlinkFile = __parentDirname + "\\Electrify " + pageName
-            + ".lnk";
-        var settingsFile =  __udataDirname + "\\electrify-" +
-            urlObj.hostname + ".settings.txt";
+        var symlinkFile = path.join(__parentDirname, "Electrify " + pageName
+            + ".lnk");
+        var settingsFile = path.join(__udataDirname, "electrify-" +
+            urlObj.hostname + ".settings.txt");
 
         var opts = [
                 "-linkfile",
@@ -322,11 +322,13 @@ var storeSettings = function (settings) {
 
         // console.log(opts);
 
-        exec.execFile(symlink, opts, function(err, stdout, stderr) {
-            if (err) {
-                console.log("Could not generate symlink. " + err.message);
-            }
-        });
+	if (symlink != undefined) {
+		exec.execFile(symlink, opts, function(err, stdout, stderr) {
+		    if (err) {
+		        console.log("Could not generate symlink. " + err.message);
+		    }
+		});
+	}
 
         // delete internal settings
         delete settings.windowSettings.icon;
