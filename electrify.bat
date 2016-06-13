@@ -11,4 +11,4 @@ echo ELECTRON - %ELECTRON%
 echo APP      - %APP%
 echo COMMAND  - %ELECTRON% %APP% %*
 
-%ELECTRON% %APP% %*
+start %ELECTRON% %APP% %*

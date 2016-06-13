@@ -29,6 +29,8 @@ On windows you can also start the app using
 >> electrify.bat https://web.whatsapp.com
 ```
 
+A subfolder `__electrified` will be created, containing the extracted and converted favicons, a reusable settings file (see below) and a desktop link (Win only) to add the electrified website to your Start menu or quick start.
+
 ### Options
 
 For details on options etc. run:
@@ -43,7 +45,6 @@ Options:
     -m          Window maximized.
     -d          Run in development mode.
     -r <FILE>   Read settings from local file (all other options are ignored).
-    -w <FILE>   Write settings to local file.
     -h          Print this help.
 
 Example: <electrify> https://web.whatsapp.com -c inject.css -d

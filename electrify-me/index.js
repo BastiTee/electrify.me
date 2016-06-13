@@ -5,6 +5,8 @@ const vurl = require("valid-url");
 const minimist = require("minimist")
 const electron = require("electron");
 const exec = require("child_process");
+const walk = require("walk");
+const url = require("url");
 const http = require("http");
 const https = require("https");
 const favicon = require("favicon");
@@ -13,16 +15,19 @@ const path = require("path");
 const os = require("os");
 const app = electron.app;
 const ipc = electron.ipcMain;
-const __parentDirname = path.resolve(__dirname, '..');
+const __parentDirname = path.resolve(__dirname, "..");
+const __udataDirname = path.join(__parentDirname, "__electrified");
 
 ///////////////////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 var readCmdLine = function(argv) {
+
+    var settings = {};
+
     if ( argv.h != undefined || argv.help != undefined)
         help();
-    var settings = {};
 
     // try to read and evaluate settings file..
     var readSettingsFromFile = false;
@@ -59,10 +64,12 @@ var readCmdLine = function(argv) {
     // set some internal settings
     settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
     settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
-    settings.favicoIn = __dirname + "/favicon_" + settings.uriKey + ".ico";
-    settings.favicoOut = __dirname + "/favicon_" + settings.uriKey + ".png";
+    settings.favicoBase = __udataDirname + "/favicon_"
+        + settings.uriKey;
+    settings.favicoIn =  settings.favicoBase + ".ico";
+    settings.favicoOut = settings.favicoBase + ".png";
 
-    if (readSettingsFromFile) // don't parse cmd line in this case
+    if (readSettingsFromFile) // don"t parse cmd line in this case
         return settings;
 
     // read optional input  files
@@ -82,6 +89,16 @@ var readCmdLine = function(argv) {
         movable: true,
         frame: true,
     };
+
+    // create user data dir
+    try {
+        fs.mkdirSync(__udataDirname);
+    } catch (ex) {
+        if (ex.code !== "EEXIST") {
+            console.log(ex.message);
+            help(ex.message);
+        }
+    }
 
     return settings;
 };
@@ -115,7 +132,7 @@ var getFaviconUrl = function (settings) {
 
         // skip on existing png icon file
         if (fileExists( settings.favicoOut )) {
-            resolve();
+            resolve(settings);
             return;
         }
 
@@ -139,18 +156,18 @@ var getFavicon = function (settings) {
         var client = settings.httpClient == "http" ? http : https;
         var request = client.get(settings.faviconUrl,
             function(response, err) {
-	    if (err) {
-		console.log(err);
-	     }
-            var stream = response.pipe(file);
-            stream.on("finish", function () {
+               if (err) {
+                  console.log(err);
+              }
+              var stream = response.pipe(file);
+              stream.on("finish", function () {
                 resolve(settings);
             });
-        });
-	request.setTimeout( 10000, function( ) {
-	    console.log("Request to download favicon timed out!!");
-	resolve(settings);
-	});
+          });
+        request.setTimeout( 10000, function( ) {
+           console.log("Request to download favicon timed out!!");
+           resolve(settings);
+       });
     });
 };
 
@@ -163,7 +180,7 @@ var convertFaviconToPng = function (settings) {
         }
 
         var convert = "convert";
-        console.log("Platform: " + os.platform() + "-" + os.arch());
+        // console.log("Platform: " + os.platform() + "-" + os.arch());
         if (os.platform() === "win32" &&
             (os.arch() === "x64" || os.arch() === "ia32")) {
             convert = __dirname + "/ext/imagemagick-windows/convert.exe";
@@ -172,7 +189,7 @@ var convertFaviconToPng = function (settings) {
                 "present. Will try to use default.");
         }
 
-        var opts = [settings.favicoIn+"[0]", settings.favicoOut ];
+        var opts = [settings.favicoIn, settings.favicoOut ];
         exec.execFile(convert, opts, function(err, stdout, stderr) {
             if (err) {
                 console.log("Could not generate pgn. Will skip this step. "
@@ -183,6 +200,34 @@ var convertFaviconToPng = function (settings) {
         });
     });
 };
+
+var selectBestFavicon = function (settings) {
+    return new Promise(function(resolve, reject) {
+
+        var maxSize = 0;
+        var selectedFile = undefined;
+        var candPatt = new RegExp("favicon_"
+            + settings.uriKey + ".*\\.png$", "i");
+
+        var walker = walk.walk(__udataDirname, {
+            followLinks: false
+        });
+        walker.on("file", function(root, stat, next) {
+            if (stat.name.match(candPatt)) {
+                if (Number(stat.size) > maxSize) {
+                    maxSize = Number(stat.size);
+                    selectedFile = stat.name;
+                }
+            }
+            next();
+        });
+        walker.on("end", function() {
+            settings.favicoOut = path.join(__udataDirname, selectedFile);
+            resolve(settings);
+        });
+    });
+};
+
 
 var setupWebcontent = function (settings, splash) {
     return new Promise(function(resolve, reject) {
@@ -239,7 +284,7 @@ var injectCss = function ( settings, bw ) {
 var storeSettings = function (settings) {
     return new Promise(function(resolve, reject) {
 
-        console.log("Platform: " + os.platform() + "-" + os.arch());
+        // console.log("Platform: " + os.platform() + "-" + os.arch());
         var symlink = undefined;
         if (os.platform() === "win32" &&
             (os.arch() === "x64" || os.arch() === "ia32")) {
@@ -249,10 +294,15 @@ var storeSettings = function (settings) {
                 "present.");
         }
 
-        var domain = settings.url.split("/")[2];
-        var symlinkFile = __parentDirname + "\\electrify-" + domain + ".lnk";
-        var settingsFile =  __parentDirname + "\\electrify-" +
-            domain + ".settings.txt";
+        var urlObj = url.parse(settings.url);
+        var pageName = urlObj.hostname.replace(/\.[^\.]+$/, "")
+            .replace(/.*\./, "");
+        pageName = pageName.charAt(0).toUpperCase() + pageName.slice(1);
+
+        var symlinkFile = __udataDirname + "\\Electrify " + pageName
+            + ".lnk";
+        var settingsFile =  __udataDirname + "\\electrify-" +
+            urlObj.hostname + ".settings.txt";
 
         var opts = [
                 "-linkfile",
@@ -265,12 +315,12 @@ var storeSettings = function (settings) {
                 "-linkarguments",
                 "electrify-me -r " + settingsFile,
                 "-description",
-                "Electrify " + domain,
+                "Electrify " + pageName,
                 "-iconlocation",
                 settings.favicoIn
             ];
 
-        console.log(opts);
+        // console.log(opts);
 
         exec.execFile(symlink, opts, function(err, stdout, stderr) {
             if (err) {
@@ -286,6 +336,7 @@ var storeSettings = function (settings) {
         delete settings.uriKey;
         delete settings.favicoIn;
         delete settings.favicoOut;
+        delete settings.favicoBase;
 
         fs.writeFile(settingsFile,
             JSON.stringify(settings, null, 2), "utf-8",
@@ -306,9 +357,9 @@ var storeSettings = function (settings) {
 
 var startApplication = function(settings, splash) {
 
-    console.log("=== SETTINGS ===");
-    console.log(JSON.stringify(settings, null, 4));
-    console.log("================");
+    // console.log("=== SETTINGS ===");
+    // console.log(JSON.stringify(settings, null, 4));
+    // console.log("================");
 
     openSplash().then(function(data) {
         console.log("Splash screen loaded.");
@@ -325,6 +376,10 @@ var startApplication = function(settings, splash) {
     })
     .then(function() {
         console.log("Converted favicon to:\n\t" + settings.favicoOut);
+        return selectBestFavicon(settings);
+    })
+    .then(function() {
+        console.log("Selected best favicon:\n\t" + settings.favicoOut);
         return setupWebcontent(settings, splash);
     })
     .then(function(browserWindow) {

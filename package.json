@@ -16,7 +16,8 @@
   "dependencies": {
     "electron-prebuilt": "1.0.1",
     "favicon": "0.0.2",
-    "minimist": "^1.2.0",
-    "valid-url": "^1.0.9"
+    "minimist": "1.2.0",
+    "valid-url": "1.0.9",
+    "walk": "2.3.9"
   }
 }
