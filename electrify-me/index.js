@@ -299,7 +299,7 @@ var storeSettings = function (settings) {
             .replace(/.*\./, "");
         pageName = pageName.charAt(0).toUpperCase() + pageName.slice(1);
 
-        var symlinkFile = __udataDirname + "\\Electrify " + pageName
+        var symlinkFile = __parentDirname + "\\Electrify " + pageName
             + ".lnk";
         var settingsFile =  __udataDirname + "\\electrify-" +
             urlObj.hostname + ".settings.txt";
