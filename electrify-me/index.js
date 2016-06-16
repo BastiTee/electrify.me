@@ -325,50 +325,62 @@ var injectCss = function ( settings, bw ) {
 var storeSettings = function (settings) {
     return new Promise(function(resolve, reject) {
 
-        // console.log("Platform: " + os.platform() + "-" + os.arch());
-        var symlink = undefined;
-        if (os.platform() === "win32" &&
-            (os.arch() === "x64" || os.arch() === "ia32")) {
-            symlink = __dirname + "\\ext\\shortcut-windows.bat";
-        } else {
-            console.log("No built-in symlink backend for this platform " +
-                "present.");
-        }
-
         var urlObj = url.parse(settings.url);
         var pageName = urlObj.hostname.replace(/\.[^\.]+$/, "")
             .replace(/.*\./, "");
         pageName = pageName.charAt(0).toUpperCase() + pageName.slice(1);
-
-        var symlinkFile = path.join("%UserProfile%", "Desktop",
-            "Electrify " + pageName + ".lnk");
         var settingsFile = path.join(__udataDirname, "electrify-" +
             urlObj.hostname + ".settings.txt");
 
-        var opts = [
-                "-linkfile",
-                symlinkFile,
-                "-target",
-                __parentDirname +
-                "\\node_modules\\electron-prebuilt\\dist\\electron.exe",
-                "-workdir",
-                __parentDirname,
-                "-linkarguments",
-                "electrify-me -r " + settingsFile,
-                "-description",
-                "Electrify " + pageName,
-                "-iconlocation",
-                settings.favicoIn
-            ];
+	console.log(os.platform());
+        if (os.platform() === "win32" &&
+            (os.arch() === "x64" || os.arch() === "ia32")) {
+            var symlink = __dirname + "\\ext\\shortcut-windows.bat";
+	    var symlinkFile = path.join(process.env.HOME, "Desktop",
+            "Electrify " + pageName + ".lnk");
 
-        if (symlink != undefined) {
+
+		var opts = [
+		        "-linkfile",
+		        symlinkFile,
+		        "-target",
+		        __parentDirname +
+		        "\\node_modules\\electron-prebuilt\\dist\\electron.exe",
+		        "-workdir",
+		        __parentDirname,
+		        "-linkarguments",
+		        "electrify-me -r " + settingsFile,
+		        "-description",
+		        "Electrify " + pageName,
+		        "-iconlocation",
+		        settings.favicoIn
+		    ];
+
+      
             child_process.execFile(symlink, opts,
                 function(err, stdout, stderr) {
                 if (err) {
                     console.log("Could not generate symlink. " + err.message);
                 }
             });
-        }
+      
+
+        } else if (os.platform() === "linux") {
+var stream = fs.createWriteStream(path.join(process.env.HOME, "Desktop", "Electrify " + pageName + ".desktop"));
+stream.once('open', function(fd) {
+	// http://askubuntu.com/questions/436891/create-a-desktop-file-that-opens-and-execute-a-command-in-a-terminal
+  stream.end();
+});
+		
+
+        } else {
+            console.log("No built-in symlink backend for this platform " +
+                "present.");
+	}
+
+
+
+       
 
         // delete internal settings
         delete settings.windowSettings.icon;
