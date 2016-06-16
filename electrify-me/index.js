@@ -11,8 +11,9 @@ const http = require("http");
 const https = require("https");
 const favicon = require("favicon");
 const fs = require("fs");
-const path = require("path");
 const os = require("os");
+const path = require("path");
+const request = require("request");
 const app = electron.app;
 const ipc = electron.ipcMain;
 const __parentDirname = path.resolve(__dirname, "..");
@@ -23,84 +24,85 @@ const __udataDirname = path.join(__parentDirname, "__electrified");
 ///////////////////////////////////////////////////////////////////////////////
 
 var readCmdLine = function(argv) {
+    return new Promise(function(resolve, reject) {
 
-    var settings = {};
+        var settings = {};
 
-    if ( argv.h != undefined || argv.help != undefined)
-        help();
+        if ( argv.h != undefined || argv.help != undefined)
+            help();
 
-    // try to read and evaluate settings file..
-    var readSettingsFromFile = false;
-    if (argv.r != undefined) {
-        if (argv.r == "" || argv.r == true || argv.r == false) {
-            help("Read-settings option used, but no filepath provided.");
+        // try to read and evaluate settings file..
+        var readSettingsFromFile = false;
+        if (argv.r != undefined) {
+            if (argv.r == "" || argv.r == true || argv.r == false) {
+                help("Read-settings option used, but no filepath provided.");
+            }
+            try {
+                settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
+                console.log("Read settings from file " + argv.r
+                    + ". Content was:\n" + JSON.stringify(
+                        settings, null, 2));
+                console.log("For all possible window options refer to " +
+                    "http://electron.atom.io/docs/api/browser-window/#class-" +
+                    "browserwindow !! WARNING !! Parameters icon, show, and " +
+                    "webPreferences will always be overwritten!");
+            } catch (err) {
+                help (err.message);
+            }
+            readSettingsFromFile = true;
+        };
+
+        if (!readSettingsFromFile)
+            settings.url = String(argv._);
+
+        if (settings.url == undefined )
+                help("No URL provided.");
+
+        // set some internal settings
+        settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
+        settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
+        settings.favicoBase = __udataDirname + "/favicon_"
+            + settings.uriKey;
+        settings.favicoIn =  settings.favicoBase + ".ico";
+        settings.favicoOut = settings.favicoBase + ".png";
+
+        if (readSettingsFromFile) {
+            // don"t parse cmd line in this case
+            resolve(settings);
+            return;
         }
+
+        // read optional input  files
+        settings.cssFile = argv.c != undefined ? argv.c : undefined;
+        if (settings.cssFile == "" || settings.cssFile == true ||
+            settings.cssFile == false)
+            help("CSS option used, but no filepath provided.");
+        // read optional cmd toggles
+        settings.devMode = argv.d != undefined ? true : false;
+        settings.maximized = argv.m != undefined ? true : false;
+
+        // default window settings
+        settings.windowSettings = {
+            fullscreen: false,
+            fullscreenable: true,
+            resizable: true,
+            movable: true,
+            frame: true,
+        };
+
+        // create user data dir
         try {
-            settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
-            console.log("Read settings from file " + argv.r
-                + ". Content was:\n" + JSON.stringify(
-                    settings, null, 2));
-            console.log("For all possible window options refer to " +
-                "http://electron.atom.io/docs/api/browser-window/#class-" +
-                "browserwindow !! WARNING !! Parameters icon, show, and " +
-                "webPreferences will always be overwritten!");
-        } catch (err) {
-            help (err.message);
+            fs.mkdirSync(__udataDirname);
+        } catch (ex) {
+            if (ex.code !== "EEXIST") {
+                console.log(ex.message);
+                help(ex.message);
+            }
         }
-        readSettingsFromFile = true;
-    };
 
-    if (!readSettingsFromFile) {
-        // read and evaluate target url
-        settings.url = argv._;
-        if (settings.url == undefined || settings.url.length == 0)
-            help("No URL provided.");
-        settings.url = String(settings.url);
-
-        if (!vurl.isWebUri(settings.url))
-             help("URI " + settings.url + " is malformed.");
-    }
-
-    // set some internal settings
-    settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
-    settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
-    settings.favicoBase = __udataDirname + "/favicon_"
-        + settings.uriKey;
-    settings.favicoIn =  settings.favicoBase + ".ico";
-    settings.favicoOut = settings.favicoBase + ".png";
-
-    if (readSettingsFromFile) // don"t parse cmd line in this case
-        return settings;
-
-    // read optional input  files
-    settings.cssFile = argv.c != undefined ? argv.c : undefined;
-    if (settings.cssFile == "" || settings.cssFile == true ||
-        settings.cssFile == false)
-        help("CSS option used, but no filepath provided.");
-    // read optional cmd toggles
-    settings.devMode = argv.d != undefined ? true : false;
-    settings.maximized = argv.m != undefined ? true : false;
-
-    // default window settings
-    settings.windowSettings = {
-        fullscreen: false,
-        fullscreenable: true,
-        resizable: true,
-        movable: true,
-        frame: true,
-    };
-
-    // create user data dir
-    try {
-        fs.mkdirSync(__udataDirname);
-    } catch (ex) {
-        if (ex.code !== "EEXIST") {
-            console.log(ex.message);
-            help(ex.message);
-        }
-    }
-
-    return settings;
+        // console.log(settings);
+        resolve(settings);
+    });
 };
 
 var openSplash = function() {
@@ -127,11 +129,41 @@ var openSplash = function() {
     });
 };
 
+var resolveToFullyQualifiedUrl = function(settings) {
+    return new Promise(function(resolve, reject) {
+        var urlBefore = settings.url;
+        if (vurl.isWebUri(urlBefore)) {
+            console.log("URI " + urlBefore + " already fully qualified.");
+            resolve(settings);
+            return;
+        }
+
+        var searchUrl = "https://duckduckgo.com/?q=" + urlBefore
+        + "&format=json";
+        request(searchUrl, function (error, response, body) {
+            if (error || response.statusCode != 200)
+                help("Could not resolve unqualified URI " + urlBefore);
+
+            var json = JSON.parse(body);
+            try {
+                settings.url = json.Results[0].FirstURL;
+                if (!vurl.isWebUri(settings.url))
+                    help("Could not resolve unqualified URI " + urlBefore);
+                console.log("Resolved " + urlBefore + " to " + settings.url);
+                resolve(settings);
+            } catch (err) {
+                help("Could not resolve unqualified URI " + urlBefore);
+            }
+        });
+    });
+};
+
 var getFaviconUrl = function (settings) {
     return new Promise(function(resolve, reject) {
 
         // skip on existing png icon file
         if (fileExists( settings.favicoOut )) {
+            settings.faviconUrl = settings.favicoOut;
             resolve(settings);
             return;
         }
@@ -299,8 +331,8 @@ var storeSettings = function (settings) {
             .replace(/.*\./, "");
         pageName = pageName.charAt(0).toUpperCase() + pageName.slice(1);
 
-        var symlinkFile = path.join(__parentDirname, "Electrify " + pageName
-            + ".lnk");
+        var symlinkFile = path.join("%UserProfile%", "Desktop",
+            "Electrify " + pageName + ".lnk");
         var settingsFile = path.join(__udataDirname, "electrify-" +
             urlObj.hostname + ".settings.txt");
 
@@ -320,15 +352,13 @@ var storeSettings = function (settings) {
                 settings.favicoIn
             ];
 
-        // console.log(opts);
-
-	if (symlink != undefined) {
-		exec.execFile(symlink, opts, function(err, stdout, stderr) {
-		    if (err) {
-		        console.log("Could not generate symlink. " + err.message);
-		    }
-		});
-	}
+        if (symlink != undefined) {
+            exec.execFile(symlink, opts, function(err, stdout, stderr) {
+                if (err) {
+                    console.log("Could not generate symlink. " + err.message);
+                }
+            });
+        }
 
         // delete internal settings
         delete settings.windowSettings.icon;
@@ -357,18 +387,20 @@ var storeSettings = function (settings) {
 // CORE CONTROLLER ////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-var startApplication = function(settings, splash) {
+var startApplication = function(argv, splash, settings) {
 
-    // console.log("=== SETTINGS ===");
-    // console.log(JSON.stringify(settings, null, 4));
-    // console.log("================");
-
-    openSplash().then(function(data) {
+    readCmdLine(argv).then(function(data) {
+        console.log("Read command line.");
+        settings = data;
+        return openSplash();
+    }).then(function(data) {
         console.log("Splash screen loaded.");
         splash = data;
+        return resolveToFullyQualifiedUrl(settings);
+    }).then(function(data) {
+        settings = data;
         return getFaviconUrl(settings);
-    })
-    .then(function() {
+    }).then(function() {
         console.log("Received favicon url:\n\t" + settings.faviconUrl);
         return getFavicon(settings);
     })
@@ -409,7 +441,7 @@ app.on("window-all-closed", function() {
 
 app.on("ready", function() {
     const argv = minimist(process.argv.slice(2));
-    startApplication(readCmdLine(argv));
+    startApplication(argv);
 });
 
 ///////////////////////////////////////////////////////////////////////////////
