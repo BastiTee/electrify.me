@@ -1,21 +1,28 @@
 (function() {
 "use-strict";
 
-const vurl = require("valid-url");
-const minimist = require("minimist")
-const electron = require("electron");
-const exec = require("child_process");
-const walk = require("walk");
+// Node-internal dependencies
 const url = require("url");
 const http = require("http");
 const https = require("https");
-const favicon = require("favicon");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const child_process = require("child_process");
+
+// External dependencies
+const favicon = require("favicon");
+const minimist = require("minimist")
 const request = require("request");
+const vurl = require("valid-url");
+const walk = require("walk");
+
+// Electron dependencies
+const electron = require("electron");
 const app = electron.app;
 const ipc = electron.ipcMain;
+
+// Constants
 const __parentDirname = path.resolve(__dirname, "..");
 const __udataDirname = path.join(__parentDirname, "__electrified");
 
@@ -55,7 +62,7 @@ var readCmdLine = function(argv) {
         if (!readSettingsFromFile)
             settings.url = String(argv._);
 
-        if (settings.url == undefined )
+        if (settings.url == undefined || settings.url == "" )
                 help("No URL provided.");
 
         // set some internal settings
@@ -222,7 +229,7 @@ var convertFaviconToPng = function (settings) {
         }
 
         var opts = [settings.favicoIn, settings.favicoOut ];
-        exec.execFile(convert, opts, function(err, stdout, stderr) {
+        child_process.execFile(convert, opts, function(err, stdout, stderr) {
             if (err) {
                 console.log("Could not generate pgn. Will skip this step. "
                     + err.message);
@@ -353,7 +360,8 @@ var storeSettings = function (settings) {
             ];
 
         if (symlink != undefined) {
-            exec.execFile(symlink, opts, function(err, stdout, stderr) {
+            child_process.execFile(symlink, opts,
+                function(err, stdout, stderr) {
                 if (err) {
                     console.log("Could not generate symlink. " + err.message);
                 }
