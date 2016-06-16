@@ -174,10 +174,12 @@ var getFaviconUrl = function (settings) {
             resolve(settings);
             return;
         }
-
+	console.log("Obtaining favicon for url " + settings.url);
         favicon(settings.url, function(err, data) {
-            if (err != undefined)
-                reject();
+            if (err != undefined) {
+		reject();
+		return;
+	    };
             settings.faviconUrl = data;
             resolve(settings);
         });
