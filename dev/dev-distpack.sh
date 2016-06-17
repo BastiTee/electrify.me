@@ -6,7 +6,7 @@ EXCLUDES=""
 if [ "$1" == "win32" ]; then
     INCLUDES="${INCLUDES} *.bat"
 elif [ "$1" == "linux" ]; then
-    INCLUDES="${INCLUDES} *.sh"
+    INCLUDES="${INCLUDES} electrify"
     EXCLUDES="-x electrify-me/ext/imagemagick-windows/\*"
 else
     echo "Platform untested!"
