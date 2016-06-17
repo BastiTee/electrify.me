@@ -45,11 +45,9 @@ In the root folder you should find a desktop link to restart your configured app
 
 ### Options
 
-For details on options etc. run:
+For details on options etc. run `npm start -- -h` or `electrify.bat -h` (if windows) or `./electrify -h` (if linux).
 
 ```
->> npm start -- -h
-
 Usage:   <electrify> [URL] ([OPTS])
 
 Options:
