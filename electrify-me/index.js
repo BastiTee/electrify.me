@@ -374,7 +374,7 @@ var storeSettings = function (settings) {
                     settings.uriKey + ".desktop"));
                 stream.once('open', function(fd) {
                 stream.write("[Desktop Entry]\n");
-                stream.write("Version=0.2.0\n");
+                stream.write("Version=0.2.1\n");
                 stream.write("Name=Electrify " + pageName + "\n");
                 stream.write("Comment=Electrified Version of "
                     + settings.url + "\n");
