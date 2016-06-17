@@ -59,9 +59,9 @@ var readCmdLine = function(argv) {
             readSettingsFromFile = true;
         };
 
+        // URL basic validation
         if (!readSettingsFromFile)
             settings.url = String(argv._);
-
         if (settings.url == undefined || settings.url == "" )
                 help("No URL provided.");
 
@@ -74,7 +74,7 @@ var readCmdLine = function(argv) {
         settings.favicoOut = settings.favicoBase + ".png";
 
         if (readSettingsFromFile) {
-            // don"t parse cmd line in this case
+            // dont parse cmd line in this case
             resolve(settings);
             return;
         }
@@ -107,7 +107,6 @@ var readCmdLine = function(argv) {
             }
         }
 
-        // console.log(settings);
         resolve(settings);
     });
 };
@@ -174,15 +173,15 @@ var getFaviconUrl = function (settings) {
             resolve(settings);
             return;
         }
-	console.log("Obtaining favicon for url " + settings.url);
+	    // console.log("Obtaining favicon for url " + settings.url);
         favicon(settings.url, function(err, data) {
             if (err != undefined) {
-		reject();
-		return;
-	    };
-            settings.faviconUrl = data;
-            resolve(settings);
-        });
+              reject();
+              return;
+          };
+          settings.faviconUrl = data;
+          resolve(settings);
+      });
     });
 };
 
@@ -197,18 +196,18 @@ var getFavicon = function (settings) {
         var client = settings.httpClient == "http" ? http : https;
         var request = client.get(settings.faviconUrl,
             function(response, err) {
-               if (err) {
-                  console.log(err);
-              }
-              var stream = response.pipe(file);
-              stream.on("finish", function () {
-                resolve(settings);
+                if (err) {
+                    console.log(err);
+                }
+                var stream = response.pipe(file);
+                stream.on("finish", function () {
+                    resolve(settings);
+                });
             });
-          });
         request.setTimeout( 10000, function( ) {
-           console.log("Request to download favicon timed out!!");
-           resolve(settings);
-       });
+            console.log("Request to download favicon timed out!!");
+            resolve(settings);
+        });
     });
 };
 
@@ -221,9 +220,7 @@ var convertFaviconToPng = function (settings) {
         }
 
         var convert = "convert";
-        // console.log("Platform: " + os.platform() + "-" + os.arch());
-        if (os.platform() === "win32" &&
-            (os.arch() === "x64" || os.arch() === "ia32")) {
+        if (os.platform() === "win32") {
             convert = __dirname + "/ext/imagemagick-windows/convert.exe";
         } else {
             console.log("No built-in resize backend for this platform " +
@@ -263,21 +260,20 @@ var selectBestFavicon = function (settings) {
             next();
         });
         walker.on("end", function() {
-	    if (selectedFile != undefined) 
+	    if (selectedFile != undefined)
 	            settings.favicoOut = path.join(__udataDirname, selectedFile);
             resolve(settings);
         });
     });
 };
 
-
 var setupWebcontent = function (settings, splash) {
     return new Promise(function(resolve, reject) {
         // append internal window settings
         settings.windowSettings.icon = settings.favicoOut;
-        settings.windowSettings.webPreferences = {
-                nodeIntegration: false
-            };
+        // settings.windowSettings.webPreferences = {
+        //         nodeIntegration: false
+        //     };
         settings.windowSettings.show = false;
 
         var bw = new electron.BrowserWindow(settings.windowSettings);
@@ -333,69 +329,67 @@ var storeSettings = function (settings) {
         var settingsFile = path.join(__udataDirname, "electrify-" +
             urlObj.hostname + ".settings.txt");
 
-	console.log(os.platform());
-        if (os.platform() === "win32" &&
-            (os.arch() === "x64" || os.arch() === "ia32")) {
+        if (os.platform() === "win32") {
+
             var symlink = __dirname + "\\ext\\shortcut-windows.bat";
-	    var symlinkFile = path.join(process.env.HOME, "Desktop",
+            var symlinkFile = path.join(__parentDirname,
             "Electrify " + pageName + ".lnk");
 
+            var opts = [
+            "-linkfile",
+            symlinkFile,
+            "-target",
+            __parentDirname +
+            "\\node_modules\\electron-prebuilt\\dist\\electron.exe",
+            "-workdir",
+            __parentDirname,
+            "-linkarguments",
+            "electrify-me -r " + settingsFile,
+            "-description",
+            "Electrify " + pageName,
+            "-iconlocation",
+            settings.favicoIn
+            ];
 
-		var opts = [
-		        "-linkfile",
-		        symlinkFile,
-		        "-target",
-		        __parentDirname +
-		        "\\node_modules\\electron-prebuilt\\dist\\electron.exe",
-		        "-workdir",
-		        __parentDirname,
-		        "-linkarguments",
-		        "electrify-me -r " + settingsFile,
-		        "-description",
-		        "Electrify " + pageName,
-		        "-iconlocation",
-		        settings.favicoIn
-		    ];
 
-      
             child_process.execFile(symlink, opts,
-                function(err, stdout, stderr) {
+            function(err, stdout, stderr) {
                 if (err) {
-                    console.log("Could not generate symlink. " + err.message);
+                    console.log("Could not generate symlink. "
+                        + err.message);
                 }
             });
-      
 
         } else if (os.platform() === "linux") {
- 		var myicon = settings.favicoIn;
-		var command = path.join(__parentDirname, "node_modules", "electron-prebuilt", "dist",
-			"electron") + " --enable-transparent-visuals --disable-gpu " 
-			+ path.join(__parentDirname, "electrify-me") + " -r " + 
-			settingsFile;
-		var stream = fs.createWriteStream(
-			path.join(process.env.HOME, 
-			"Desktop", settings.uriKey + ".desktop"));
-		stream.once('open', function(fd) {
-		stream.write("[Desktop Entry]\n");
-		stream.write("Version=0.2.0\n");
-		stream.write("Name=Electrify " + pageName + "\n");
-		stream.write("Comment=Electrified Version of " + settings.url + "\n");
-		stream.write("Exec=" + command + "\n");
-		stream.write("Icon=" + myicon + "\n");
-		stream.write("Terminal=false\n");
-		stream.write("Type=Application\n");
-		stream.write("Categories=Application;\n");
-		stream.end();
-		});
-		
+
+            var iconPathAbs = settings.favicoIn;
+            var command = path.join(__parentDirname,
+                "node_modules", "electron-prebuilt", "dist",
+                "electron") + " --enable-transparent-visuals --disable-gpu "
+                + path.join(__parentDirname, "electrify-me") + " -r " +
+                settingsFile;
+
+            var stream = fs.createWriteStream(
+                path.join(__parentDirname,
+                    settings.uriKey + ".desktop"));
+                stream.once('open', function(fd) {
+                stream.write("[Desktop Entry]\n");
+                stream.write("Version=0.2.0\n");
+                stream.write("Name=Electrify " + pageName + "\n");
+                stream.write("Comment=Electrified Version of "
+                    + settings.url + "\n");
+                stream.write("Exec=" + command + "\n");
+                stream.write("Icon=" + iconPathAbs + "\n");
+                stream.write("Terminal=false\n");
+                stream.write("Type=Application\n");
+                stream.write("Categories=Application;\n");
+                stream.end();
+            });
+
         } else {
             console.log("No built-in symlink backend for this platform " +
                 "present.");
-	}
-
-
-
-       
+        }
 
         // delete internal settings
         delete settings.windowSettings.icon;
