@@ -12,24 +12,36 @@ You can customize the apperance of your electrified website by injecting CSS int
 
 ## Usage
 
-### Quick start
+## Quick start from release 
+
+Get [release archive](https://github.com/BastiTee/electrify.me/releases/latest) for your system and run..
+
+*Windows*
+
+```
+electrify.bat facebook.com
+```
+
+*Linux*
+
+```
+./electrify facebook.com
+```
+
+### Quick start from source 
+
+Download source archive and run.. 
 
 ```
 >> npm install
->> npm start -- https://web.whatsapp.com
+>> npm start -- facebook.com 
 ```
 
-Limitation: On linux and mac you need to have "convert" (part of imagemagick) 
-on your system path to support favicon-to-appicon conversion (see below for details).
+### Startup process
 
-On windows you can also start the app using
+A subfolder `__electrified` will be created, containing the extracted and converted favicons and a reusable settings file (see below).
+In the root folder you should find a desktop link to restart your configured app and to add the link to your Start menu or quick start bar.
 
-```
->> npm install
->> electrify.bat https://web.whatsapp.com
-```
-
-A subfolder `__electrified` will be created, containing the extracted and converted favicons, a reusable settings file (see below) and a desktop link (Win only) to add the electrified website to your Start menu or quick start.
 
 ### Options
 
