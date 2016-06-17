@@ -263,7 +263,8 @@ var selectBestFavicon = function (settings) {
             next();
         });
         walker.on("end", function() {
-            settings.favicoOut = path.join(__udataDirname, selectedFile);
+	    if (selectedFile != undefined) 
+	            settings.favicoOut = path.join(__udataDirname, selectedFile);
             resolve(settings);
         });
     });
@@ -366,13 +367,27 @@ var storeSettings = function (settings) {
       
 
         } else if (os.platform() === "linux") {
-var stream = fs.createWriteStream(path.join(process.env.HOME, "Desktop", "Electrify " + pageName + ".desktop"));
-stream.once('open', function(fd) {
-	// http://askubuntu.com/questions/436891/create-a-desktop-file-that-opens-and-execute-a-command-in-a-terminal
-  stream.end();
-});
+ 		var myicon = settings.favicoIn;
+		var command = path.join(__parentDirname, "node_modules", "electron-prebuilt", "dist",
+			"electron") + " --enable-transparent-visuals --disable-gpu " 
+			+ path.join(__parentDirname, "electrify-me") + " -r " + 
+			settingsFile;
+		var stream = fs.createWriteStream(
+			path.join(process.env.HOME, 
+			"Desktop", settings.uriKey + ".desktop"));
+		stream.once('open', function(fd) {
+		stream.write("[Desktop Entry]\n");
+		stream.write("Version=0.2.0\n");
+		stream.write("Name=Electrify " + pageName + "\n");
+		stream.write("Comment=Electrified Version of " + settings.url + "\n");
+		stream.write("Exec=" + command + "\n");
+		stream.write("Icon=" + myicon + "\n");
+		stream.write("Terminal=false\n");
+		stream.write("Type=Application\n");
+		stream.write("Categories=Application;\n");
+		stream.end();
+		});
 		
-
         } else {
             console.log("No built-in symlink backend for this platform " +
                 "present.");
