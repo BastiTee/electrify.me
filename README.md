@@ -16,13 +16,13 @@ You can customize the apperance of your electrified website by injecting CSS int
 
 Get [release archive](https://github.com/BastiTee/electrify.me/releases/latest) for your system and run..
 
-*Windows*
+**Windows**
 
 ```
 electrify.bat facebook.com
 ```
 
-*Linux*
+**Linux**
 
 ```
 ./electrify facebook.com
