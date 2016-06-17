@@ -87,6 +87,7 @@ var readCmdLine = function(argv) {
         // read optional cmd toggles
         settings.devMode = argv.d != undefined ? true : false;
         settings.maximized = argv.m != undefined ? true : false;
+        settings.hideScrollbars = true;
 
         // default window settings
         settings.windowSettings = {
@@ -271,9 +272,9 @@ var setupWebcontent = function (settings, splash) {
     return new Promise(function(resolve, reject) {
         // append internal window settings
         settings.windowSettings.icon = settings.favicoOut;
-        // settings.windowSettings.webPreferences = {
-        //         nodeIntegration: false
-        //     };
+        settings.windowSettings.webPreferences = {
+                nodeIntegration: false
+            };
         settings.windowSettings.show = false;
 
         var bw = new electron.BrowserWindow(settings.windowSettings);
@@ -289,7 +290,6 @@ var setupWebcontent = function (settings, splash) {
             splash.destroy();
             if (settings.maximized)
                 bw.maximize();
-            bw.show();
             resolve(bw);
         });
     });
@@ -297,9 +297,13 @@ var setupWebcontent = function (settings, splash) {
 
 var injectCss = function ( settings, bw ) {
     return new Promise(function(resolve, reject) {
+
+        if (settings.hideScrollbars === true )
+            bw.webContents.insertCSS ("body { overflow:hidden !important; }");
+
         if (settings.cssFile == undefined) {
             console.log("No css file provided.");
-            resolve(settings, bw);
+            resolve(bw);
             return;
         } else {
             console.log("CSS provided at:\n\t" + settings.cssFile)
@@ -308,13 +312,14 @@ var injectCss = function ( settings, bw ) {
             if (err) {
                 console.log(err);
                 console.log("Could not read provided CSS file. Ignoring.");
-                resolve(settings, bw);
+                resolve(bw);
                 return;
             } else {
                 //console.log("CSS data read:\n\t" + data);
             }
             bw.webContents.insertCSS (data);
-            resolve();
+
+            resolve(bw);
         });
     });
 };
@@ -323,9 +328,6 @@ var storeSettings = function (settings) {
     return new Promise(function(resolve, reject) {
 
         var urlObj = url.parse(settings.url);
-        var pageName = urlObj.hostname.replace(/\.[^\.]+$/, "")
-            .replace(/.*\./, "");
-        pageName = pageName.charAt(0).toUpperCase() + pageName.slice(1);
         var settingsFile = path.join(__udataDirname, "electrify-" +
             urlObj.hostname + ".settings.txt");
 
@@ -333,7 +335,7 @@ var storeSettings = function (settings) {
 
             var symlink = __dirname + "\\ext\\shortcut-windows.bat";
             var symlinkFile = path.join(__parentDirname,
-            "Electrify " + pageName + ".lnk");
+            "Electrify " + urlObj.hostname + ".lnk");
 
             var opts = [
             "-linkfile",
@@ -346,7 +348,7 @@ var storeSettings = function (settings) {
             "-linkarguments",
             "electrify-me -r " + settingsFile,
             "-description",
-            "Electrify " + pageName,
+            "Electrify " + urlObj.hostname,
             "-iconlocation",
             settings.favicoIn
             ];
@@ -375,7 +377,7 @@ var storeSettings = function (settings) {
                 stream.once('open', function(fd) {
                 stream.write("[Desktop Entry]\n");
                 stream.write("Version=0.2.1\n");
-                stream.write("Name=Electrify " + pageName + "\n");
+                stream.write("Name=Electrify " + urlObj.hostname + "\n");
                 stream.write("Comment=Electrified Version of "
                     + settings.url + "\n");
                 stream.write("Exec=" + command + "\n");
@@ -451,7 +453,8 @@ var startApplication = function(argv, splash, settings) {
         console.log("Preprocessing done.");
         return injectCss(settings, browserWindow);
     })
-    .then(function() {
+    .then(function(browserWindow) {
+        browserWindow.show();
         console.log("Finished startup sequence.");
         return storeSettings(settings);
     })
