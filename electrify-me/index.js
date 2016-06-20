@@ -297,6 +297,11 @@ var setupWebcontent = function (settings, splash) {
                 bw.maximize();
             resolve(bw);
         });
+        bw.webContents.on("did-fail-load", function(errorCode,
+            errorDescription, validatedURL) {
+            splash.destroy();
+            logError("Electrifying failed unrecoverable.", errorCode, true);
+        });
     });
 };
 
