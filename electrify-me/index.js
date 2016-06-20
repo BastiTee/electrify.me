@@ -139,16 +139,19 @@ var resolveToFullyQualifiedUrl = function(settings) {
         + "&format=json";
         request(searchUrl, function (error, response, body) {
             if (error || response.statusCode != 200)
-                error("Could not resolve unqualified URI " + urlBefore);
+                logError("Could not resolve unqualified URI " + urlBefore,
+                    undefined, true);
 
             var json = JSON.parse(body);
             try {
                 settings.url = json.Results[0].FirstURL;
                 if (!vurl.isWebUri(settings.url))
-                    error("Could not resolve unqualified URI " + urlBefore);
+                    logError("Could not resolve unqualified URI " + urlBefore,
+                        undefined, true);
                 resolve(settings);
             } catch (err) {
-                error("Could not resolve unqualified URI " + urlBefore);
+                logError("Could not resolve unqualified URI " + urlBefore,
+                    err, true);
             }
         });
     });
@@ -165,9 +168,11 @@ var getFaviconUrl = function (settings) {
         }
         favicon(settings.url, function(err, data) {
             if (err != undefined)
-              error(err);
-          settings.faviconUrl = data;
-          resolve(settings);
+            logError(err);
+            settings.faviconUrl = data;
+            if (settings.faviconUrl == null)
+                settings.faviconUrl = undefined;
+            resolve(settings);
       });
     });
 };
@@ -176,6 +181,12 @@ var getFavicon = function (settings) {
     return new Promise(function(resolve, reject) {
         // skip on existing png icon file
         if (fileExists( settings.favicoOut )) {
+            resolve();
+            return;
+        }
+        if (settings.faviconUrl == undefined) {
+            // return when previous step did not find a favicon
+            settings.favicoIn = undefined;
             resolve();
             return;
         }
@@ -189,7 +200,7 @@ var getFavicon = function (settings) {
                 });
             });
         request.setTimeout( 10000, function( ) {
-            error("Request to download favicon timed out!!");
+            logError("Request to download favicon timed out!!");
             resolve(settings);
         });
     });
@@ -202,19 +213,24 @@ var convertFaviconToPng = function (settings) {
             resolve();
             return;
         }
+        if (!fileExists( settings.faviconIn)) {
+            settings.favicoOut = undefined;
+            resolve();
+            return;
+        }
 
         var convert = "convert";
         if (os.platform() === "win32") {
             convert = __dirname + "/ext/imagemagick-windows/convert.exe";
         } else {
-            error("No built-in resize backend for this platform " +
+            logError("No built-in resize backend for this platform " +
                 "present. Will try to use default.");
         }
 
         var opts = [settings.favicoIn, settings.favicoOut ];
         child_process.execFile(convert, opts, function(err, stdout, stderr) {
             if (err) {
-                error("Could not generate pgn. Will skip this step. "
+                logError("Could not generate pgn. Will skip this step. "
                     + err.message);
                 resolve(settings);
             }
@@ -255,7 +271,8 @@ var setupWebcontent = function (settings, splash) {
     return new Promise(function(resolve, reject) {
 
         if (!fileExists(settings.favicoOut)) {
-            error("Favicon PNG does not exist. Will use default icon.");
+            logError("Favicon PNG does not exist. Will use default icon.");
+            settings.favicoIn = path.join(__dirname, "favicon-default.ico");
             settings.favicoOut = path.join(__dirname, "favicon-default.png");
         }
 
@@ -295,7 +312,7 @@ var injectCss = function ( settings, bw ) {
         }
         fs.readFile(settings.cssFile, "utf8", function (err,data) {
             if (err) {
-                error("Could not read provided CSS file. Ignoring.", err);
+                logError("Could not read provided CSS file. Ignoring.", err);
                 resolve(bw);
                 return;
             }
@@ -338,7 +355,7 @@ var createDesktopLinks = function( settings ) {
             child_process.execFile(symlink, opts,
             function(err, stdout, stderr) {
                 if (err)
-                    error("Could not generate symlink. ", err);
+                    logError("Could not generate symlink. ", err);
                 resolve(settings);
             });
 
@@ -370,7 +387,7 @@ var createDesktopLinks = function( settings ) {
             });
 
         } else {
-            error("No built-in symlink backend for this platform present.");
+            logError("No built-in symlink backend for this platform present.");
             resolve(settings);
         }
     });
@@ -396,7 +413,7 @@ var storeSettings = function (settings) {
             JSON.stringify(settings, null, 2), "utf-8",
             function(err) {
                 if (err)
-                    error(err);
+                    logError(err);
             }
         );
 
@@ -497,11 +514,11 @@ function help( message ) {
     process.exit(0);
 };
 
-function error( message, exception, exit ) {
+function logError( message, exception, exit ) {
     if (message != undefined)
         console.log("[ERROR] " + message);
     if (exception != undefined)
-        console.log("[ERROR] Exception was: " + exception);
+        console.log("        Exception was: " + exception);
     if (exit)
         process.exit(0);
 }
