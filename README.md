@@ -1,7 +1,7 @@
 ![Electrify-Logo](dev/logo+text.png)
 > Create a native-like app from a website. Just like that.
 
-[![GitHub release](https://img.shields.io/badge/version-0.2.1-green.svg)](https://github.com/BastiTee/electrify.me/releases/latest)
+[![GitHub release](https://img.shields.io/badge/version-0.2.2-green.svg)](https://github.com/BastiTee/electrify.me/releases/latest)
 ## About
 
 *electrify.me* is a tool to run a website as native-like windows, mac or linux application. Electrified websites are available in your task bar, start menu or launchers. Just like a native application.
