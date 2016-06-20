@@ -1,9 +1,9 @@
 .gitattributes export-ignore  
 .gitignore export-ignore
 
-dev/*.bat export-ignore
-*.sh export-ignore
 *.zip export-ignore
+*.lnk export-ignore
+*.desktop export-ignore
 *sublime* export-ignore
 
 dev export-ignore

@@ -46,13 +46,6 @@ var readCmdLine = function(argv) {
             }
             try {
                 settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
-                console.log("Read settings from file " + argv.r
-                    + ". Content was:\n" + JSON.stringify(
-                        settings, null, 2));
-                console.log("For all possible window options refer to " +
-                    "http://electron.atom.io/docs/api/browser-window/#class-" +
-                    "browserwindow !! WARNING !! Parameters icon, show, and " +
-                    "webPreferences will always be overwritten!");
             } catch (err) {
                 help (err.message);
             }
@@ -102,10 +95,8 @@ var readCmdLine = function(argv) {
         try {
             fs.mkdirSync(__udataDirname);
         } catch (ex) {
-            if (ex.code !== "EEXIST") {
-                console.log(ex.message);
+            if (ex.code !== "EEXIST")
                 help(ex.message);
-            }
         }
 
         resolve(settings);
@@ -140,7 +131,6 @@ var resolveToFullyQualifiedUrl = function(settings) {
     return new Promise(function(resolve, reject) {
         var urlBefore = settings.url;
         if (vurl.isWebUri(urlBefore)) {
-            console.log("URI " + urlBefore + " already fully qualified.");
             resolve(settings);
             return;
         }
@@ -149,17 +139,16 @@ var resolveToFullyQualifiedUrl = function(settings) {
         + "&format=json";
         request(searchUrl, function (error, response, body) {
             if (error || response.statusCode != 200)
-                help("Could not resolve unqualified URI " + urlBefore);
+                error("Could not resolve unqualified URI " + urlBefore);
 
             var json = JSON.parse(body);
             try {
                 settings.url = json.Results[0].FirstURL;
                 if (!vurl.isWebUri(settings.url))
-                    help("Could not resolve unqualified URI " + urlBefore);
-                console.log("Resolved " + urlBefore + " to " + settings.url);
+                    error("Could not resolve unqualified URI " + urlBefore);
                 resolve(settings);
             } catch (err) {
-                help("Could not resolve unqualified URI " + urlBefore);
+                error("Could not resolve unqualified URI " + urlBefore);
             }
         });
     });
@@ -174,12 +163,9 @@ var getFaviconUrl = function (settings) {
             resolve(settings);
             return;
         }
-	    // console.log("Obtaining favicon for url " + settings.url);
         favicon(settings.url, function(err, data) {
-            if (err != undefined) {
-              reject();
-              return;
-          };
+            if (err != undefined)
+              error(err);
           settings.faviconUrl = data;
           resolve(settings);
       });
@@ -197,16 +183,13 @@ var getFavicon = function (settings) {
         var client = settings.httpClient == "http" ? http : https;
         var request = client.get(settings.faviconUrl,
             function(response, err) {
-                if (err) {
-                    console.log(err);
-                }
                 var stream = response.pipe(file);
                 stream.on("finish", function () {
                     resolve(settings);
                 });
             });
         request.setTimeout( 10000, function( ) {
-            console.log("Request to download favicon timed out!!");
+            error("Request to download favicon timed out!!");
             resolve(settings);
         });
     });
@@ -224,14 +207,14 @@ var convertFaviconToPng = function (settings) {
         if (os.platform() === "win32") {
             convert = __dirname + "/ext/imagemagick-windows/convert.exe";
         } else {
-            console.log("No built-in resize backend for this platform " +
+            error("No built-in resize backend for this platform " +
                 "present. Will try to use default.");
         }
 
         var opts = [settings.favicoIn, settings.favicoOut ];
         child_process.execFile(convert, opts, function(err, stdout, stderr) {
             if (err) {
-                console.log("Could not generate pgn. Will skip this step. "
+                error("Could not generate pgn. Will skip this step. "
                     + err.message);
                 resolve(settings);
             }
@@ -270,6 +253,12 @@ var selectBestFavicon = function (settings) {
 
 var setupWebcontent = function (settings, splash) {
     return new Promise(function(resolve, reject) {
+
+        if (!fileExists(settings.favicoOut)) {
+            error("Favicon PNG does not exist. Will use default icon.");
+            settings.favicoOut = path.join(__dirname, "favicon-default.png");
+        }
+
         // append internal window settings
         settings.windowSettings.icon = settings.favicoOut;
         settings.windowSettings.webPreferences = {
@@ -286,7 +275,6 @@ var setupWebcontent = function (settings, splash) {
             bw = null;
         });
         bw.webContents.on("did-finish-load", function() {
-            console.log("All data loaded.");
             splash.destroy();
             if (settings.maximized)
                 bw.maximize();
@@ -302,20 +290,14 @@ var injectCss = function ( settings, bw ) {
             bw.webContents.insertCSS ("body { overflow:hidden !important; }");
 
         if (settings.cssFile == undefined) {
-            console.log("No css file provided.");
             resolve(bw);
             return;
-        } else {
-            console.log("CSS provided at:\n\t" + settings.cssFile)
         }
         fs.readFile(settings.cssFile, "utf8", function (err,data) {
             if (err) {
-                console.log(err);
-                console.log("Could not read provided CSS file. Ignoring.");
+                error("Could not read provided CSS file. Ignoring.", err);
                 resolve(bw);
                 return;
-            } else {
-                //console.log("CSS data read:\n\t" + data);
             }
             bw.webContents.insertCSS (data);
 
@@ -324,11 +306,11 @@ var injectCss = function ( settings, bw ) {
     });
 };
 
-var storeSettings = function (settings) {
+var createDesktopLinks = function( settings ) {
     return new Promise(function(resolve, reject) {
 
         var urlObj = url.parse(settings.url);
-        var settingsFile = path.join(__udataDirname, "electrify-" +
+        settings.settingsFile = path.join(__udataDirname, "electrify-" +
             urlObj.hostname + ".settings.txt");
 
         if (os.platform() === "win32") {
@@ -346,20 +328,18 @@ var storeSettings = function (settings) {
             "-workdir",
             __parentDirname,
             "-linkarguments",
-            "electrify-me -r " + settingsFile,
+            "electrify-me -r " + settings.settingsFile,
             "-description",
             "Electrify " + urlObj.hostname,
             "-iconlocation",
             settings.favicoIn
             ];
 
-
             child_process.execFile(symlink, opts,
             function(err, stdout, stderr) {
-                if (err) {
-                    console.log("Could not generate symlink. "
-                        + err.message);
-                }
+                if (err)
+                    error("Could not generate symlink. ", err);
+                resolve(settings);
             });
 
         } else if (os.platform() === "linux") {
@@ -369,7 +349,7 @@ var storeSettings = function (settings) {
                 "node_modules", "electron-prebuilt", "dist",
                 "electron") + " --enable-transparent-visuals --disable-gpu "
                 + path.join(__parentDirname, "electrify-me") + " -r " +
-                settingsFile;
+                settings.settingsFile;
 
             var stream = fs.createWriteStream(
                 path.join(__parentDirname,
@@ -386,12 +366,20 @@ var storeSettings = function (settings) {
                 stream.write("Type=Application\n");
                 stream.write("Categories=Application;\n");
                 stream.end();
+                resolve(settings);
             });
 
         } else {
-            console.log("No built-in symlink backend for this platform " +
-                "present.");
+            error("No built-in symlink backend for this platform present.");
+            resolve(settings);
         }
+    });
+};
+
+var storeSettings = function (settings) {
+    return new Promise(function(resolve, reject) {
+
+        var sFile = settings.settingsFile;
 
         // delete internal settings
         delete settings.windowSettings.icon;
@@ -402,12 +390,13 @@ var storeSettings = function (settings) {
         delete settings.favicoIn;
         delete settings.favicoOut;
         delete settings.favicoBase;
+        delete settings.settingsFile;
 
-        fs.writeFile(settingsFile,
+        fs.writeFile(sFile,
             JSON.stringify(settings, null, 2), "utf-8",
             function(err) {
-                console.log("Successfully written settings to "
-                    + settingsFile);
+                if (err)
+                    error(err);
             }
         );
 
@@ -420,46 +409,52 @@ var storeSettings = function (settings) {
 // CORE CONTROLLER ////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-var startApplication = function(argv, splash, settings) {
+var startApplication = function(argv) {
 
-    readCmdLine(argv).then(function(data) {
-        console.log("Read command line.");
+    var settings = undefined;
+    var splash = undefined;
+    var chain = Promise.resolve();
+
+    chain.then(function() {
+        console.log("--- Electrify initialization started.\n");
+        return readCmdLine(argv);
+    }).then(function(data) {
         settings = data;
+        console.log("Read command line.");
         return openSplash();
     }).then(function(data) {
-        console.log("Splash screen loaded.");
         splash = data;
+        console.log("Loaded splash screen.");
         return resolveToFullyQualifiedUrl(settings);
     }).then(function(data) {
         settings = data;
+        console.log("Resolved input URL.");
         return getFaviconUrl(settings);
     }).then(function() {
-        console.log("Received favicon url:\n\t" + settings.faviconUrl);
+        console.log("Received favicon url --> " + settings.faviconUrl);
         return getFavicon(settings);
-    })
-    .then(function() {
-        console.log("Downloaded favicon to:\n\t" + settings.favicoIn);
+    }).then(function() {
+        console.log("Downloaded favicon --> " + settings.favicoIn);
         return convertFaviconToPng(settings);
-    })
-    .then(function() {
-        console.log("Converted favicon to:\n\t" + settings.favicoOut);
+    }).then(function() {
+        console.log("Converted favicon --> " + settings.favicoOut);
         return selectBestFavicon(settings);
-    })
-    .then(function() {
-        console.log("Selected best favicon:\n\t" + settings.favicoOut);
+    }).then(function() {
+        console.log("Selected best favicon --> " + settings.favicoOut);
         return setupWebcontent(settings, splash);
-    })
-    .then(function(browserWindow) {
-        console.log("Preprocessing done.");
+    }).then(function(browserWindow) {
+        console.log("Finished application pre-processing.");
         return injectCss(settings, browserWindow);
-    })
-    .then(function(browserWindow) {
+    }).then(function(browserWindow) {
         browserWindow.show();
-        console.log("Finished startup sequence.");
+        console.log("Injected CSS.");
+        return createDesktopLinks(settings);
+    }).then(function(settings) {
+        console.log("Created desktop links.");
         return storeSettings(settings);
-    })
-    .then(function() {
-        console.log("Settings stored.");
+    }).then(function() {
+        console.log("Stored settings file.");
+        console.log("\n--- Electrify initialization done.");
     });
 };
 
@@ -497,8 +492,19 @@ function help( message ) {
     console.log("");
     console.log("Example: <electrify> https://web.whatsapp.com "
         + "-c inject.css -d");
+
+    // display of help always terminates the application.
     process.exit(0);
 };
+
+function error( message, exception, exit ) {
+    if (message != undefined)
+        console.log("[ERROR] " + message);
+    if (exception != undefined)
+        console.log("[ERROR] Exception was: " + exception);
+    if (exit)
+        process.exit(0);
+}
 
 function fileExists ( filename ) {
     try {
