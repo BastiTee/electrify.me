@@ -1,0 +1,100 @@
+/** Global settings */
+* {
+    font-family: Consolas, monospace !important;
+    background-image: none !important;
+}
+#app {
+    background-color: #4C4A48 !important;
+
+}
+*::-webkit-scrollbar {
+    display: none;
+}
+
+/** Reformat main components */
+.block-compose,
+.bubble,
+.bubble-text,
+.butterbar-container,
+.chat-body,
+.chat-status,
+.chat-time,
+.chat-title,
+.cont-input-search,
+.input,
+.input-container,
+.message,
+.message-chat,
+.message-out,
+.message-system-body,
+.message-text,
+.message-text a,
+.msg,
+.msg-continuation,
+.pane-chat-body,
+.pane-chat-footer,
+.pane-header,
+.pane-subheader,
+.pane-list-subheader,
+.subheader-search,
+.tail
+{
+    background-color: #4C4A48 !important;
+    color: #D0D0D0 !important;
+    background-image: none !important;
+    margin: 0px !important;
+    padding: 0px !important;
+    font-size: 12px !important;
+    border-style: none !important;
+}
+.input,
+.input-container
+{
+  background-color: #404040 !important;
+  height: 30px !important;
+}
+/** Hide a plethora of elements */
+.audio-body,
+.audio-status,
+.avatar,
+.chat-avatar,
+.chat-secondary,
+.emojitext img,
+.icon-ptt,
+.icon-smiley,
+.icon-user-default-square,
+.input-placeholder,
+.link-preview-container,
+.media-state-controls,
+.message-author,
+.message-meta,
+.message-out:before,
+.ppt-container,
+.tail-container
+{
+    display: none !important;
+}
+
+/** Make any videos or images invisble by default */
+.image-thumb,
+.image-thumb-body
+{
+    background: -webkit-linear-gradient(#666, #eee) !important;
+    box-sizing: border-box !important;
+    moz-box-sizing: border-box !important;
+    height: 10px !important;
+    width: 10px !important;
+}
+.image-thumb img {
+    background-color: aliceblue !important;
+    height: 10px !important;
+    padding: 10px !important;
+    width: 1px !important;
+}
+
+/** Add space between left and right side of main window */
+.pane-chat {
+    padding-left: 10px;
+    background-color: #4C4A48 !important;
+    background-image: none !important;
+}
