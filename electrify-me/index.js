@@ -24,7 +24,7 @@ const ipc = electron.ipcMain;
 
 // Constants
 const __parentDirname = path.resolve(__dirname, "..");
-const __udataDirname = path.join(__parentDirname, "__electrified");
+const __udataDirname = path.join(__parentDirname, "_electrified");
 
 ///////////////////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////
@@ -50,6 +50,7 @@ var readCmdLine = function(argv) {
                 help (err.message);
             }
             readSettingsFromFile = true;
+            settings.pathToSettings = argv.r;
         };
 
         // URL basic validation
@@ -213,7 +214,7 @@ var convertFaviconToPng = function (settings) {
             resolve();
             return;
         }
-        if (!fileExists( settings.faviconIn)) {
+        if (!fileExists( settings.favicoIn )) {
             settings.favicoOut = undefined;
             resolve();
             return;
@@ -228,6 +229,9 @@ var convertFaviconToPng = function (settings) {
         }
 
         var opts = [settings.favicoIn, settings.favicoOut ];
+
+        console.log("opts: " + opts + " << " + settings.faviconIn);
+
         child_process.execFile(convert, opts, function(err, stdout, stderr) {
             if (err) {
                 logError("Could not generate pgn. Will skip this step. "
@@ -315,14 +319,33 @@ var injectCss = function ( settings, bw ) {
             resolve(bw);
             return;
         }
-        fs.readFile(settings.cssFile, "utf8", function (err,data) {
+
+        var cssFile = settings.cssFile;
+        console.log(cssFile);
+        if (!fileExists(cssFile)) {
+            console.log(">> " + settings.pathToSettings);
+            if (settings.pathToSettings == undefined) {
+              resolve(bw);
+              return;
+            }
+            var settingsDir = path.resolve(settings.pathToSettings, "..");
+            console.log("CSS file " + cssFile + " does not exist. Will "
+            + "try to find it next to settings file in: " + settingsDir );
+            cssFile = path.join(settingsDir, settings.cssFile);
+            if (!fileExists(cssFile)) {
+              console.log("Nope. Not there either." );
+              resolve(bw);
+              return;
+            }
+        }
+
+        fs.readFile(cssFile, "utf8", function (err,data) {
             if (err) {
                 logError("Could not read provided CSS file. Ignoring.", err);
                 resolve(bw);
                 return;
             }
             bw.webContents.insertCSS (data);
-
             resolve(bw);
         });
     });
@@ -338,7 +361,7 @@ var createDesktopLinks = function( settings ) {
         if (os.platform() === "win32") {
 
             var symlink = __dirname + "\\ext\\shortcut-windows.bat";
-            var symlinkFile = path.join(__parentDirname,
+            var symlinkFile = path.join(__udataDirname,
             "Electrify " + urlObj.hostname + ".lnk");
 
             var opts = [
@@ -346,7 +369,7 @@ var createDesktopLinks = function( settings ) {
             symlinkFile,
             "-target",
             __parentDirname +
-            "\\node_modules\\electron-prebuilt\\dist\\electron.exe",
+            "\\node_modules\\electron\\dist\\electron.exe",
             "-workdir",
             __parentDirname,
             "-linkarguments",
@@ -367,14 +390,14 @@ var createDesktopLinks = function( settings ) {
         } else if (os.platform() === "linux") {
 
             var iconPathAbs = settings.favicoIn;
-            var command = path.join(__parentDirname,
-                "node_modules", "electron-prebuilt", "dist",
+            var command = path.join(__udataDirname,
+                "node_modules", "electron", "dist",
                 "electron") + " --enable-transparent-visuals --disable-gpu "
                 + path.join(__parentDirname, "electrify-me") + " -r " +
                 settings.settingsFile;
 
             var stream = fs.createWriteStream(
-                path.join(__parentDirname,
+                path.join(__udataDirname,
                     settings.uriKey + ".desktop"));
                 stream.once('open', function(fd) {
                 stream.write("[Desktop Entry]\n");
@@ -408,11 +431,15 @@ var storeSettings = function (settings) {
         delete settings.windowSettings.webPreferences;
         delete settings.windowSettings.show;
         delete settings.httpClient;
+        delete settings.pathToSettings;
         delete settings.uriKey;
         delete settings.favicoIn;
         delete settings.favicoOut;
         delete settings.favicoBase;
         delete settings.settingsFile;
+        if (settings.cssFile == undefined) {
+          settings.cssFile = "unset";
+        }
 
         fs.writeFile(sFile,
             JSON.stringify(settings, null, 2), "utf-8",

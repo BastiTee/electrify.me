@@ -1,7 +1,7 @@
 @ECHO off
 
 SET SCRIPT_PATH=%~dp0
-SET ELECTRON=%SCRIPT_PATH:~0,-1%\node_modules\electron-prebuilt\dist\electron.exe
+SET ELECTRON=%SCRIPT_PATH:~0,-1%\node_modules\electron\dist\electron.exe
 SET APP=%SCRIPT_PATH:~0,-1%\electrify-me
 
 CD %SCRIPT_PATH%
