@@ -1,6 +1,5 @@
 ################################################################################
 # OWN ADDITIONS
-*.sublime-workspace
 *.zip
 __electrified
 *.lnk
@@ -40,4 +39,3 @@ node_modules
 
 # Optional REPL history
 .node_repl_history
-

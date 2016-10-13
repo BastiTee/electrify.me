@@ -1,4 +1,4 @@
-![Electrify-Logo](dev/logo+text.png)
+![Electrify-Logo](readme-res/logo+text.png)
 > Create a native-like app from a website. Just like that.
 
 [![GitHub release](https://img.shields.io/badge/version-0.2.2-green.svg)](https://github.com/BastiTee/electrify.me/releases/latest)
@@ -8,7 +8,7 @@
 
 You can customize the apperance of your electrified website by injecting CSS into the website, start the app in kiosk mode, open it at specific window positions [and much more](http://electron.atom.io/docs/api/browser-window/#new-browserwindowoptions).
 
-![Screenshot](dev/screenshot.png)
+![Screenshot](readme-res/screenshot.png)
 
 ## Usage
 
