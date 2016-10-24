@@ -390,27 +390,32 @@ var createDesktopLinks = function( settings ) {
         } else if (os.platform() === "linux") {
 
             var iconPathAbs = settings.favicoIn;
-            var command = path.join(__udataDirname,
+            var command = path.join(__parentDirname,
                 "node_modules", "electron", "dist",
                 "electron") + " --enable-transparent-visuals --disable-gpu "
                 + path.join(__parentDirname, "electrify-me") + " -r " +
                 settings.settingsFile;
 
-            var stream = fs.createWriteStream(
-                path.join(__udataDirname,
-                    settings.uriKey + ".desktop"));
-                stream.once('open', function(fd) {
+            var targetFile = path.join(__udataDirname,
+                settings.uriKey + ".desktop");
+            var stream = fs.createWriteStream(targetFile);
+            stream.once('open', function(fd) {
                 stream.write("[Desktop Entry]\n");
                 stream.write("Version=0.2.2\n");
                 stream.write("Name=Electrify " + urlObj.hostname + "\n");
                 stream.write("Comment=Electrified Version of "
                     + settings.url + "\n");
+                stream.write("Path=" + __parentDirname + "\n");
                 stream.write("Exec=" + command + "\n");
                 stream.write("Icon=" + iconPathAbs + "\n");
-                stream.write("Terminal=false\n");
                 stream.write("Type=Application\n");
-                stream.write("Categories=Application;\n");
+                stream.write("Encoding=UTF-8\n");
+                stream.write("StartupNotify=false\n");
+                stream.write("StartupWMClass=Electron\n");
+                stream.write("OnlyShowIn=Unity;\n");
+                stream.write("X-UnityGenerated=true\n");
                 stream.end();
+                fs.chmodSync(targetFile, 0755);
                 resolve(settings);
             });
 
