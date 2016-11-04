@@ -233,6 +233,9 @@ var convertFaviconToPng = function (settings) {
             if (err) {
                 logError("Could not generate pgn. Will skip this step. "
                     + err.message);
+                // remove input file to allow retries
+                fs.unlinkSync(settings.favicoIn);
+                settings.favicoIn = undefined;
                 resolve(settings);
             }
             resolve(settings);
@@ -271,10 +274,30 @@ var selectBestFavicon = function (settings) {
 var setupWebcontent = function (settings, splash) {
     return new Promise(function(resolve, reject) {
 
+        // if no favicon was found, set it to default
         if (!fileExists(settings.favicoOut)) {
             logError("Favicon PNG does not exist. Will use default icon.");
             settings.favicoIn = path.join(__dirname, "favicon-default.ico");
             settings.favicoOut = path.join(__dirname, "favicon-default.png");
+        }
+
+        // if manual icon is set, try to set it ..
+        var settingsDir = settings.pathToSettings == undefined ? undefined :
+            path.resolve(settings.pathToSettings, "..");
+        var miconAbsPath = settings.manualIcon;
+        var miconSettingsPath = (
+            settingsDir == undefined || settings.manualIcon == undefined) ?
+            settings.manualIcon : path.join(settingsDir, settings.manualIcon);
+
+        if (miconAbsPath != undefined && fileExists(miconAbsPath)) {
+            console.log("Manual icon path resolved. Will set icon to: " +
+                miconAbsPath );
+            settings.favicoOut = miconAbsPath;
+        } else if (miconSettingsPath != undefined &&
+            fileExists(miconSettingsPath)) {
+            console.log("Manual icon path resolved. Will set icon to: " +
+                miconSettingsPath );
+            settings.favicoOut = miconSettingsPath;
         }
 
         // append internal window settings
@@ -324,7 +347,6 @@ var injectCss = function ( settings, bw ) {
         }
 
         var cssFile = settings.cssFile;
-        console.log(cssFile);
         if (!fileExists(cssFile)) {
             console.log(">> " + settings.pathToSettings);
             if (settings.pathToSettings == undefined) {
@@ -446,7 +468,10 @@ var storeSettings = function (settings) {
         delete settings.favicoBase;
         delete settings.settingsFile;
         if (settings.cssFile == undefined) {
-          settings.cssFile = "unset";
+          settings.cssFile = null;
+        }
+        if (settings.manualIcon == undefined) {
+          settings.manualIcon = null;
         }
 
         fs.writeFile(sFile,
