@@ -116,9 +116,6 @@ var openSplash = function() {
             frame: false,
             transparent: true,
             show: false,
-            webPreferences: {
-                nodeIntegration: false
-            },
         });
         splash.loadURL("file://" + __dirname + "/splash.html");
         splash.webContents.on("did-finish-load", function() {
@@ -282,9 +279,6 @@ var setupWebcontent = function (settings, splash) {
 
         // append internal window settings
         settings.windowSettings.icon = settings.favicoOut;
-        settings.windowSettings.webPreferences = {
-                nodeIntegration: false
-            };
         settings.windowSettings.show = false;
 
         var bw = new electron.BrowserWindow(settings.windowSettings);
@@ -306,6 +300,15 @@ var setupWebcontent = function (settings, splash) {
             splash.destroy();
             logError("Electrifying failed unrecoverable.", errorCode, true);
         });
+        // hook urls to default browser
+        var handleRedirect = (e, url) => {
+          if(url != bw.webContents.getURL()) {
+            e.preventDefault()
+            electron.shell.openExternal(url)
+          }
+        }
+        bw.webContents.on("will-navigate", handleRedirect)
+        bw.webContents.on("new-window", handleRedirect)
     });
 };
 
