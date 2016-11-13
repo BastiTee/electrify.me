@@ -9,15 +9,15 @@
     "start": "electron --enable-transparent-visuals --disable-gpu . "
   },
   "repository": {
-    "type": "git",
-    "url": "git://github.com/BastiTee/electrify-me.git"
+    "url": "git://github.com/BastiTee/electrify-me.git",
+    "type": "git"
   },
   "license": "GPL-3.0",
   "dependencies": {
-    "request": "2.78.0",
     "electron": "1.4.5",
     "favicon": "0.0.2",
     "minimist": "1.2.0",
+    "request": "2.78.0",
     "valid-url": "1.0.9",
     "walk": "2.3.9"
   }
