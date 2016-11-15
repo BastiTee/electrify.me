@@ -303,6 +303,9 @@ var setupWebcontent = function (settings, splash) {
         // append internal window settings
         settings.windowSettings.icon = settings.favicoOut;
         settings.windowSettings.show = false;
+        settings.windowSettings.webPreferences = {
+                nodeIntegration: false
+            };
 
         var bw = new electron.BrowserWindow(settings.windowSettings);
         bw.setMenu(null);  // disable default menu
@@ -330,7 +333,7 @@ var setupWebcontent = function (settings, splash) {
             electron.shell.openExternal(url)
           }
         }
-        bw.webContents.on("will-navigate", handleRedirect)
+        //bw.webContents.on("will-navigate", handleRedirect)
         bw.webContents.on("new-window", handleRedirect)
     });
 };
