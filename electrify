@@ -16,4 +16,4 @@ echo "ELECTRON - $ELECTRON"
 echo "APP      - $APP"
 echo "COMMAND  - $ELECTRON $APP $@"
 
-$ELECTRON --enable-transparent-visuals --disable-gpu $APP $@ &
+$ELECTRON --enable-transparent-visuals --disable-gpu $APP $@

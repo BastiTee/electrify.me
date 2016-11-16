@@ -1,4 +1,3 @@
-(function() {
 "use-strict";
 
 // Node-internal dependencies
@@ -11,7 +10,7 @@ const path = require("path");
 const child_process = require("child_process");
 
 // External dependencies
-const favicon = require("favicon");
+const $ = require("cheerio");
 const minimist = require("minimist")
 const request = require("request");
 const vurl = require("valid-url");
@@ -26,16 +25,15 @@ const ipc = electron.ipcMain;
 const __parentDirname = path.resolve(__dirname, "..");
 const __udataDirname = path.join(__parentDirname, "_electrified");
 
-///////////////////////////////////////////////////////////////////////////////
-// CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+// CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////////////////////
 
 var readCmdLine = function(argv) {
     return new Promise(function(resolve, reject) {
 
         var settings = {};
 
-        if ( argv.h != undefined || argv.help != undefined)
+        if (argv.h != undefined || argv.help != undefined)
             help();
 
         // try to read and evaluate settings file..
@@ -47,7 +45,7 @@ var readCmdLine = function(argv) {
             try {
                 settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
             } catch (err) {
-                help (err.message);
+                help(err.message);
             }
             readSettingsFromFile = true;
             settings.pathToSettings = argv.r;
@@ -56,16 +54,16 @@ var readCmdLine = function(argv) {
         // URL basic validation
         if (!readSettingsFromFile)
             settings.url = String(argv._);
-        if (settings.url == undefined || settings.url == "" )
-                help("No URL provided.");
+        if (settings.url == undefined || settings.url == "")
+            help("No URL provided.");
 
         // set some internal settings
         settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
         settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
-        settings.favicoBase = __udataDirname + "/favicon_"
-            + settings.uriKey;
-        settings.favicoIn =  settings.favicoBase + ".ico";
-        settings.favicoOut = settings.favicoBase + ".png";
+        settings.workingDir = __udataDirname + "/" + settings.uriKey;
+
+        settings.favicoIn = settings.workingDir + ".ico";
+        settings.favicoOut = settings.workingDir + ".png";
 
         if (readSettingsFromFile) {
             // dont parse cmd line in this case
@@ -92,13 +90,8 @@ var readCmdLine = function(argv) {
             frame: true,
         };
 
-        // create user data dir
-        try {
-            fs.mkdirSync(__udataDirname);
-        } catch (ex) {
-            if (ex.code !== "EEXIST")
-                help(ex.message);
-        }
+        mkdirSilent(__udataDirname);
+        mkdirSilent(settings.workingDir);
 
         resolve(settings);
     });
@@ -133,9 +126,12 @@ var resolveToFullyQualifiedUrl = function(settings) {
             return;
         }
 
-        var searchUrl = "https://duckduckgo.com/?q=" + urlBefore
-        + "&format=json";
-        request(searchUrl, function (error, response, body) {
+        var searchUrl = "https://duckduckgo.com/?q=" + urlBefore +
+            "&format=json";
+        request({
+            url: searchUrl,
+            timeout: 5000
+        }, function(error, response, body) {
             if (error || response.statusCode != 200)
                 logError("Could not resolve unqualified URI " + urlBefore,
                     undefined, true);
@@ -155,30 +151,97 @@ var resolveToFullyQualifiedUrl = function(settings) {
     });
 };
 
-var getFaviconUrl = function (settings) {
+var getFaviconUrl = function(settings) {
     return new Promise(function(resolve, reject) {
 
         // skip on existing png icon file
-        if (fileExists( settings.favicoOut )) {
+        if (fileExists(settings.favicoOut)) {
             settings.faviconUrl = settings.favicoOut;
             resolve(settings);
             return;
         }
-        favicon(settings.url, function(err, data) {
-            if (err != undefined)
-            logError(err);
-            settings.faviconUrl = data;
-            if (settings.faviconUrl == null)
-                settings.faviconUrl = undefined;
+
+        var rootWebpath = settings.url.replace(/:\/\//, "@").replace(/\/.*/g, "").replace(/@/, "://");
+        console.log("rootWebpath : " + rootWebpath)
+        request({
+            url: rootWebpath,
+            timeout: 5000
+        }, function(error, response, body) {
+            console.log(response.statusCode);
+            if (error || response.statusCode != 200) {
+                logError("Could not resolve unqualified URI " + urlBefore,
+                    undefined, true);
+                resolve(settings);
+            }
+
+            var candidates = [];
+            console.log(body);
+            var pageContent = $.load(body);
+            var links = pageContent('link');
+
+            console.log(">>>> " + links);
+
+            $(links).each(function() {
+                var href = $(this).attr('href');
+                console.log(" ---> " + href)
+                if (ico(href) || png(href)) {
+                    var relpath = rootWebpath + '/' + href.replace(/^\//, '')
+                    candidates.push(relpath);
+                }
+            });
+
+            settings.faviconUrl = candidates;
             resolve(settings);
-      });
+        });
     });
 };
 
-var getFavicon = function (settings) {
+var downloadFile = function(from, to) {
+    return new Promise(function(resolve, reject) {
+        var stream = request({
+            url: from,
+            timeout: 1000
+        }).pipe(fs.createWriteStream(to));
+        stream.on('finish', function() {
+            resolve(to);
+        });
+        stream.on('error', function() {
+            resolve();
+        })
+    });
+}
+
+var convertIcon = function(settings, icoFile) {
+    return new Promise(function(resolve, reject) {
+        var convert = "convert";
+        if (os.platform() === "win32") {
+            convert = __dirname + "/ext/imagemagick-windows/convert.exe";
+        } else {
+            logError("No built-in resize backend for this platform " +
+                "present. Will try to use default.");
+        }
+
+        var opts = [icoFile, icoFile + ".png"];
+
+        console.log("opts: " + opts + " << " + settings.faviconIn);
+
+        child_process.execFile(convert, opts, function(err, stdout, stderr) {
+            if (err) {
+                logError("Could not generate pgn. Will skip this step. " +
+                    err.message);
+                // remove input file to allow retries
+                fs.unlinkSync(icoFile);
+                resolve();
+            }
+            resolve();
+        });
+    });
+}
+
+var getFavicon = function(settings) {
     return new Promise(function(resolve, reject) {
         // skip on existing png icon file
-        if (fileExists( settings.favicoOut )) {
+        if (fileExists(settings.favicoOut)) {
             resolve();
             return;
         }
@@ -188,73 +251,81 @@ var getFavicon = function (settings) {
             resolve();
             return;
         }
-        var file = fs.createWriteStream(settings.favicoIn);
-        var client = settings.httpClient == "http" ? http : https;
-        var request = client.get(settings.faviconUrl,
-            function(response, err) {
-                var stream = response.pipe(file);
-                stream.on("finish", function () {
-                    resolve(settings);
-                });
-            });
-        request.setTimeout( 10000, function( ) {
-            logError("Request to download favicon timed out!!");
+
+        var foundPng = false;
+
+        var promises = [];
+        for (var i in settings.faviconUrl) {
+            var favUrl = settings.faviconUrl[i];
+            var filename = __udataDirname + "/" + settings.uriKey + "/" + favUrl.replace(/.*\/([^/]*)/, '\$1');
+
+            if (png(favUrl))
+                foundPng = true;
+            // skip icos when a png was found
+            if (foundPng && ico(favUrl))
+                continue;
+            promises.push(downloadFile(favUrl, filename));
+        }
+
+        var dlChain = Promise.resolve();
+        Promise.all(promises).then(values => {
+            settings.favicoIn = values;
             resolve(settings);
         });
     });
 };
 
-var convertFaviconToPng = function (settings) {
+var convertFaviconToPng = function(settings) {
     return new Promise(function(resolve, reject) {
+
         // skip on existing png icon file
-        if (fileExists( settings.favicoOut )) {
+        if (fileExists(settings.favicoOut)) {
             resolve();
             return;
         }
-        if (!fileExists( settings.favicoIn )) {
-            settings.favicoOut = undefined;
-            resolve();
-            return;
-        }
+        // skip if no favicon was found
+        // if (!fileExists(settings.favicoIn)) {
+        //     settings.favicoOut = undefined;
+        //     resolve();
+        //     return;
+        // }
+        // // skip if found favicon is already png
+        // if (settings.favicoIn.toLowerCase().indexOf(".png") >= 0) {
+        //     settings.favicoOut = settings.favicoIn;
+        //     resolve();
+        //     return;
+        // }
 
-        var convert = "convert";
-        if (os.platform() === "win32") {
-            convert = __dirname + "/ext/imagemagick-windows/convert.exe";
-        } else {
-            logError("No built-in resize backend for this platform " +
-                "present. Will try to use default.");
-        }
-
-        var opts = [settings.favicoIn, settings.favicoOut ];
-
-        console.log("opts: " + opts + " << " + settings.faviconIn);
-
-        child_process.execFile(convert, opts, function(err, stdout, stderr) {
-            if (err) {
-                logError("Could not generate pgn. Will skip this step. "
-                    + err.message);
-                // remove input file to allow retries
-                fs.unlinkSync(settings.favicoIn);
-                settings.favicoIn = undefined;
-                resolve(settings);
+        var promises = [];
+        for (var i in settings.favicoIn) {
+            var fav = settings.favicoIn[i];
+            console.log(">> " + fav);
+            if (ico(fav)) {
+                console.log("will convert.." + fav);
+                promises.push(convertIcon(settings, fav));
             }
+        }
+        var dlChain = Promise.resolve();
+        Promise.all(promises).then(values => {
+            console.log(values);
             resolve(settings);
         });
     });
 };
 
-var selectBestFavicon = function (settings) {
+var selectBestFavicon = function(settings) {
     return new Promise(function(resolve, reject) {
 
         var maxSize = 0;
         var selectedFile = undefined;
-        var candPatt = new RegExp("favicon_"
-            + settings.uriKey + ".*\\.png$", "i");
+        console.log("---- " + settings.workingDir);
+        var candPatt = new RegExp(".*\\.png$", "i");
 
-        var walker = walk.walk(__udataDirname, {
+        var walker = walk.walk(settings.workingDir, {
             followLinks: false
         });
         walker.on("file", function(root, stat, next) {
+            console.log("--- " + stat.name);
             if (stat.name.match(candPatt)) {
                 if (Number(stat.size) > maxSize) {
                     maxSize = Number(stat.size);
@@ -264,14 +335,14 @@ var selectBestFavicon = function (settings) {
             next();
         });
         walker.on("end", function() {
-	    if (selectedFile != undefined)
-	            settings.favicoOut = path.join(__udataDirname, selectedFile);
+            if (selectedFile != undefined)
+                settings.favicoOut = path.join(settings.workingDir, selectedFile);
             resolve(settings);
         });
     });
 };
 
-var setupWebcontent = function (settings, splash) {
+var setupWebcontent = function(settings, splash) {
     return new Promise(function(resolve, reject) {
 
         // if no favicon was found, set it to default
@@ -286,17 +357,17 @@ var setupWebcontent = function (settings, splash) {
             path.resolve(settings.pathToSettings, "..");
         var miconAbsPath = settings.manualIcon;
         var miconSettingsPath = (
-            settingsDir == undefined || settings.manualIcon == undefined) ?
+                settingsDir == undefined || settings.manualIcon == undefined) ?
             settings.manualIcon : path.join(settingsDir, settings.manualIcon);
 
         if (miconAbsPath != undefined && fileExists(miconAbsPath)) {
             console.log("Manual icon path resolved. Will set icon to: " +
-                miconAbsPath );
+                miconAbsPath);
             settings.favicoOut = miconAbsPath;
         } else if (miconSettingsPath != undefined &&
             fileExists(miconSettingsPath)) {
             console.log("Manual icon path resolved. Will set icon to: " +
-                miconSettingsPath );
+                miconSettingsPath);
             settings.favicoOut = miconSettingsPath;
         }
 
@@ -304,13 +375,15 @@ var setupWebcontent = function (settings, splash) {
         settings.windowSettings.icon = settings.favicoOut;
         settings.windowSettings.show = false;
         settings.windowSettings.webPreferences = {
-                nodeIntegration: false
-            };
+            nodeIntegration: false
+        };
 
         var bw = new electron.BrowserWindow(settings.windowSettings);
-        bw.setMenu(null);  // disable default menu
+        bw.setMenu(null); // disable default menu
         if (settings.devMode)
-            bw.openDevTools({ detach: true });
+            bw.openDevTools({
+                detach: true
+            });
         bw.loadURL(settings.url);
         bw.on("closed", function() {
             bw = null;
@@ -328,21 +401,21 @@ var setupWebcontent = function (settings, splash) {
         });
         // hook urls to default browser
         var handleRedirect = (e, url) => {
-          if(url != bw.webContents.getURL()) {
-            e.preventDefault()
-            electron.shell.openExternal(url)
-          }
-        }
-        //bw.webContents.on("will-navigate", handleRedirect)
+                if (url != bw.webContents.getURL()) {
+                    e.preventDefault()
+                    electron.shell.openExternal(url)
+                }
+            }
+            //bw.webContents.on("will-navigate", handleRedirect)
         bw.webContents.on("new-window", handleRedirect)
     });
 };
 
-var injectCss = function ( settings, bw ) {
+var injectCss = function(settings, bw) {
     return new Promise(function(resolve, reject) {
 
-        if (settings.hideScrollbars === true )
-            bw.webContents.insertCSS ("body { overflow:hidden !important; }");
+        if (settings.hideScrollbars === true)
+            bw.webContents.insertCSS("body { overflow:hidden !important; }");
 
         if (settings.cssFile == undefined) {
             resolve(bw);
@@ -353,33 +426,33 @@ var injectCss = function ( settings, bw ) {
         if (!fileExists(cssFile)) {
             console.log(">> " + settings.pathToSettings);
             if (settings.pathToSettings == undefined) {
-              resolve(bw);
-              return;
+                resolve(bw);
+                return;
             }
             var settingsDir = path.resolve(settings.pathToSettings, "..");
-            console.log("CSS file " + cssFile + " does not exist. Will "
-            + "try to find it next to settings file in: " + settingsDir );
+            console.log("CSS file " + cssFile + " does not exist. Will " +
+                "try to find it next to settings file in: " + settingsDir);
             cssFile = path.join(settingsDir, settings.cssFile);
             if (!fileExists(cssFile)) {
-              console.log("Nope. Not there either." );
-              resolve(bw);
-              return;
+                console.log("Nope. Not there either.");
+                resolve(bw);
+                return;
             }
         }
 
-        fs.readFile(cssFile, "utf8", function (err,data) {
+        fs.readFile(cssFile, "utf8", function(err, data) {
             if (err) {
                 logError("Could not read provided CSS file. Ignoring.", err);
                 resolve(bw);
                 return;
             }
-            bw.webContents.insertCSS (data);
+            bw.webContents.insertCSS(data);
             resolve(bw);
         });
     });
 };
 
-var createDesktopLinks = function( settings ) {
+var createDesktopLinks = function(settings) {
     return new Promise(function(resolve, reject) {
 
         var urlObj = url.parse(settings.url);
@@ -390,38 +463,38 @@ var createDesktopLinks = function( settings ) {
 
             var symlink = __dirname + "\\ext\\shortcut-windows.bat";
             var symlinkFile = path.join(__udataDirname,
-            "Electrify " + urlObj.hostname + ".lnk");
+                "Electrify " + urlObj.hostname + ".lnk");
 
             var opts = [
-            "-linkfile",
-            symlinkFile,
-            "-target",
-            __parentDirname +
-            "\\node_modules\\electron\\dist\\electron.exe",
-            "-workdir",
-            __parentDirname,
-            "-linkarguments",
-            "electrify-me -r " + settings.settingsFile,
-            "-description",
-            "Electrify " + urlObj.hostname,
-            "-iconlocation",
-            settings.favicoIn
+                "-linkfile",
+                symlinkFile,
+                "-target",
+                __parentDirname +
+                "\\node_modules\\electron\\dist\\electron.exe",
+                "-workdir",
+                __parentDirname,
+                "-linkarguments",
+                "electrify-me -r " + settings.settingsFile,
+                "-description",
+                "Electrify " + urlObj.hostname,
+                "-iconlocation",
+                settings.favicoIn
             ];
 
             child_process.execFile(symlink, opts,
-            function(err, stdout, stderr) {
-                if (err)
-                    logError("Could not generate symlink. ", err);
-                resolve(settings);
-            });
+                function(err, stdout, stderr) {
+                    if (err)
+                        logError("Could not generate symlink. ", err);
+                    resolve(settings);
+                });
 
         } else if (os.platform() === "linux") {
 
-            var iconPathAbs = settings.favicoIn;
+            var iconPathAbs = settings.favicoOut;
             var command = path.join(__parentDirname,
-                "node_modules", "electron", "dist",
-                "electron") + " --enable-transparent-visuals --disable-gpu "
-                + path.join(__parentDirname, "electrify-me") + " -r " +
+                    "node_modules", "electron", "dist",
+                    "electron") + " --enable-transparent-visuals --disable-gpu " +
+                path.join(__parentDirname, "electrify-me") + " -r " +
                 settings.settingsFile;
 
             var targetFile = path.join(__udataDirname,
@@ -431,8 +504,8 @@ var createDesktopLinks = function( settings ) {
                 stream.write("[Desktop Entry]\n");
                 stream.write("Version=0.2.2\n");
                 stream.write("Name=Electrify " + urlObj.hostname + "\n");
-                stream.write("Comment=Electrified Version of "
-                    + settings.url + "\n");
+                stream.write("Comment=Electrified Version of " +
+                    settings.url + "\n");
                 stream.write("Path=" + __parentDirname + "\n");
                 stream.write("Exec=" + command + "\n");
                 stream.write("Icon=" + iconPathAbs + "\n");
@@ -454,7 +527,7 @@ var createDesktopLinks = function( settings ) {
     });
 };
 
-var storeSettings = function (settings) {
+var storeSettings = function(settings) {
     return new Promise(function(resolve, reject) {
 
         var sFile = settings.settingsFile;
@@ -467,14 +540,14 @@ var storeSettings = function (settings) {
         delete settings.pathToSettings;
         delete settings.uriKey;
         delete settings.favicoIn;
-        delete settings.favicoOut;
-        delete settings.favicoBase;
+        // delete settings.favicoOut;
+        delete settings.workingDir;
         delete settings.settingsFile;
         if (settings.cssFile == undefined) {
-          settings.cssFile = null;
+            settings.cssFile = null;
         }
         if (settings.manualIcon == undefined) {
-          settings.manualIcon = null;
+            settings.manualIcon = null;
         }
 
         fs.writeFile(sFile,
@@ -490,9 +563,9 @@ var storeSettings = function (settings) {
 };
 
 
-///////////////////////////////////////////////////////////////////////////////
-// CORE CONTROLLER ////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+// CORE CONTROLLER
+//////////////////////////////////////////////////////////////////
 
 var startApplication = function(argv) {
 
@@ -513,7 +586,7 @@ var startApplication = function(argv) {
         return resolveToFullyQualifiedUrl(settings);
     }).then(function(data) {
         settings = data;
-        console.log("Resolved input URL.");
+        console.log("Resolved input URL to " + settings.url);
         return getFaviconUrl(settings);
     }).then(function() {
         console.log("Received favicon url --> " + settings.faviconUrl);
@@ -543,9 +616,8 @@ var startApplication = function(argv) {
     });
 };
 
-///////////////////////////////////////////////////////////////////////////////
-// CORE EVENTS ////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+// CORE EVENTS //////////////////////////////////////////////////////////////////
 
 app.on("window-all-closed", function() {
     if (process.platform != "darwin") {
@@ -558,11 +630,11 @@ app.on("ready", function() {
     startApplication(argv);
 });
 
-///////////////////////////////////////////////////////////////////////////////
-// HELPER FUNCTIONS ///////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+// HELPER FUNCTIONS
+//////////////////////////////////////////////////////////////////
 
-function help( message ) {
+function help(message) {
     if (message != undefined)
         console.log(message);
     console.log("Usage:   <electrify> [URL] ([OPTS])");
@@ -571,18 +643,18 @@ function help( message ) {
     console.log("    -c <FILE>   CSS to be injected into website.");
     console.log("    -m          Window maximized.");
     console.log("    -d          Run in development mode.");
-    console.log("    -r <FILE>   Read settings from local file "
-        + "(all other options are ignored).");
+    console.log("    -r <FILE>   Read settings from local file " +
+        "(all other options are ignored).");
     console.log("    -h          Print this help.");
     console.log("");
-    console.log("Example: <electrify> https://web.whatsapp.com "
-        + "-c inject.css -d");
+    console.log("Example: <electrify> https://web.whatsapp.com " +
+        "-c inject.css -d");
 
     // display of help always terminates the application.
     process.exit(0);
 };
 
-function logError( message, exception, exit ) {
+var logError = function(message, exception, exit) {
     if (message != undefined)
         console.log("[ERROR] " + message);
     if (exception != undefined)
@@ -591,7 +663,7 @@ function logError( message, exception, exit ) {
         process.exit(0);
 }
 
-function fileExists ( filename ) {
+var fileExists = function(filename) {
     try {
         fs.accessSync(filename, fs.F_OK | fs.R_OK);
         var stat = fs.statSync(filename);
@@ -603,4 +675,20 @@ function fileExists ( filename ) {
     }
 };
 
-})();
+var mkdirSilent = function(directory) {
+    try {
+        fs.mkdirSync(directory);
+    } catch (ex) {
+        if (ex.code !== "EEXIST")
+            help(ex.message);
+    }
+}
+
+var png = function(filename) {
+    return (filename.toLowerCase().indexOf(".png") >= 0 &&
+        filename.toLowerCase().indexOf("fluidicon") <= 0);
+}
+
+var ico = function(filename) {
+    return filename.toLowerCase().indexOf(".ico") >= 0;
+}
