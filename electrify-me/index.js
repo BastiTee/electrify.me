@@ -20,6 +20,7 @@ const walk = require("walk");
 const electron = require("electron");
 const app = electron.app;
 const ipc = electron.ipcMain;
+const tray = electron.Tray;
 
 // Constants
 const __parentDirname = path.resolve(__dirname, "..");
@@ -99,6 +100,10 @@ var readCmdLine = function(argv) {
 
 var openSplash = function() {
     return new Promise(function(resolve, reject) {
+
+        // resolve();
+        // return;
+
         var splash = new electron.BrowserWindow({
             width: 120,
             height: 120,
@@ -162,12 +167,12 @@ var getFaviconUrl = function(settings) {
         }
 
         var rootWebpath = settings.url.replace(/:\/\//, "@").replace(/\/.*/g, "").replace(/@/, "://");
-        console.log("rootWebpath : " + rootWebpath)
+        console.log("Root webpath for favicon-search: " + rootWebpath)
+
         request({
             url: rootWebpath,
             timeout: 5000
         }, function(error, response, body) {
-            console.log(response.statusCode);
             if (error || response.statusCode != 200) {
                 logError("Could not resolve unqualified URI " + urlBefore,
                     undefined, true);
@@ -175,15 +180,11 @@ var getFaviconUrl = function(settings) {
             }
 
             var candidates = [];
-            console.log(body);
             var pageContent = $.load(body);
             var links = pageContent('link');
 
-            console.log(">>>> " + links);
-
             $(links).each(function() {
                 var href = $(this).attr('href');
-                console.log(" ---> " + href)
                 if (ico(href) || png(href)) {
                     var relpath = rootWebpath + '/' + href.replace(/^\//, '')
                     candidates.push(relpath);
@@ -198,9 +199,22 @@ var getFaviconUrl = function(settings) {
 
 var downloadFile = function(from, to) {
     return new Promise(function(resolve, reject) {
+
+        if (fileExists(to)) {
+            resolve(to);
+            return;
+        }
+
         var stream = request({
             url: from,
-            timeout: 1000
+            timeout: 5000
+        }, function(error) {
+            if (error) {
+                logError(error);
+                fs.unlinkSync(to);
+                resolve();
+                return;
+            }
         }).pipe(fs.createWriteStream(to));
         stream.on('finish', function() {
             resolve(to);
@@ -238,6 +252,16 @@ var convertIcon = function(settings, icoFile) {
     });
 }
 
+var cleanArray = function(actual) {
+    var newArray = new Array();
+    for (var i = 0; i < actual.length; i++) {
+        if (actual[i]) {
+            newArray.push(actual[i]);
+        }
+    }
+    return newArray;
+}
+
 var getFavicon = function(settings) {
     return new Promise(function(resolve, reject) {
         // skip on existing png icon file
@@ -269,6 +293,7 @@ var getFavicon = function(settings) {
 
         var dlChain = Promise.resolve();
         Promise.all(promises).then(values => {
+            values = cleanArray(values);
             settings.favicoIn = values;
             resolve(settings);
         });
@@ -299,9 +324,7 @@ var convertFaviconToPng = function(settings) {
         var promises = [];
         for (var i in settings.favicoIn) {
             var fav = settings.favicoIn[i];
-            console.log(">> " + fav);
             if (ico(fav)) {
-                console.log("will convert.." + fav);
                 promises.push(convertIcon(settings, fav));
             }
         }
@@ -318,14 +341,12 @@ var selectBestFavicon = function(settings) {
 
         var maxSize = 0;
         var selectedFile = undefined;
-        console.log("---- " + settings.workingDir);
         var candPatt = new RegExp(".*\\.png$", "i");
 
         var walker = walk.walk(settings.workingDir, {
             followLinks: false
         });
         walker.on("file", function(root, stat, next) {
-            console.log("--- " + stat.name);
             if (stat.name.match(candPatt)) {
                 if (Number(stat.size) > maxSize) {
                     maxSize = Number(stat.size);
@@ -377,7 +398,7 @@ var setupWebcontent = function(settings, splash) {
         settings.windowSettings.webPreferences = {
             nodeIntegration: false
         };
-
+        console.log(settings.windowSettings);
         var bw = new electron.BrowserWindow(settings.windowSettings);
         bw.setMenu(null); // disable default menu
         if (settings.devMode)
@@ -389,14 +410,16 @@ var setupWebcontent = function(settings, splash) {
             bw = null;
         });
         bw.webContents.on("did-finish-load", function() {
-            splash.destroy();
+            if (splash != undefined)
+                splash.destroy();
             if (settings.maximized)
                 bw.maximize();
             resolve(bw);
         });
         bw.webContents.on("did-fail-load", function(errorCode,
             errorDescription, validatedURL) {
-            splash.destroy();
+            if (splash != undefined)
+                splash.destroy();
             logError("Electrifying failed unrecoverable.", errorCode, true);
         });
         // hook urls to default browser
@@ -408,6 +431,7 @@ var setupWebcontent = function(settings, splash) {
             }
             //bw.webContents.on("will-navigate", handleRedirect)
         bw.webContents.on("new-window", handleRedirect)
+        console.log("-foo");
     });
 };
 
@@ -424,7 +448,6 @@ var injectCss = function(settings, bw) {
 
         var cssFile = settings.cssFile;
         if (!fileExists(cssFile)) {
-            console.log(">> " + settings.pathToSettings);
             if (settings.pathToSettings == undefined) {
                 resolve(bw);
                 return;
@@ -540,7 +563,8 @@ var storeSettings = function(settings) {
         delete settings.pathToSettings;
         delete settings.uriKey;
         delete settings.favicoIn;
-        // delete settings.favicoOut;
+        delete settings.faviconUrl;
+        delete settings.favicoOut;
         delete settings.workingDir;
         delete settings.settingsFile;
         if (settings.cssFile == undefined) {
