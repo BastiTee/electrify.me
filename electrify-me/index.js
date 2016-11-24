@@ -104,6 +104,7 @@ var cleanArray = function(actual) {
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////////////////////
 
 var readSettingsFromFile = function(argv) {
+    var settings = {};
     if (isVoid(argv.r))
         return "";
     try {
