@@ -104,9 +104,7 @@ var cleanArray = function(actual) {
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////////////////////
 
 var readSettingsFromFile = function(argv) {
-    if (argv.r === undefined)
-        return false;
-    if (argv.r === "" || argv.r === true || argv.r === false)
+    if (argv.r === undefined || argv.r === "" )
         help("Read-settings option used, but no filepath provided.");
     try {
         settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
@@ -118,11 +116,7 @@ var readSettingsFromFile = function(argv) {
 };
 
 var readCmdLine = function(argv) {
-
-    // TODO Reduce complexity!
-
-    return new Promise(function(resolve, reject) {
-
+    return new Promise(function(resolve, reject) { // TODO To complex!
         var settings = {};
 
         if (argv.h !== undefined || argv.help !== undefined)
