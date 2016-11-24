@@ -11,7 +11,7 @@ const child_process = require("child_process");
 
 // External dependencies
 const $ = require("cheerio");
-const minimist = require("minimist")
+const minimist = require("minimist");
 const request = require("request");
 const vurl = require("valid-url");
 const walk = require("walk");
@@ -63,7 +63,7 @@ var fileExists = function(filename) {
     try {
         fs.accessSync(filename, fs.F_OK | fs.R_OK);
         var stat = fs.statSync(filename);
-        if (stat["size"] == 0)
+        if (stat["size"] === 0)
             return false;
         return true;
     } catch (err) {
@@ -116,7 +116,7 @@ var readCmdLine = function(argv) {
         // try to read and evaluate settings file..
         var readSettingsFromFile = false;
         if (argv.r !== undefined) {
-            if (argv.r == "" || argv.r == true || argv.r == false) {
+            if (argv.r === "" || argv.r === true || argv.r === false) {
                 help("Read-settings option used, but no filepath provided.");
             }
             try {
@@ -131,7 +131,7 @@ var readCmdLine = function(argv) {
         // URL basic validation
         if (!readSettingsFromFile)
             settings.url = String(argv._);
-        if (settings.url == undefined || settings.url == "")
+        if (settings.url === undefined || settings.url === "")
             help("No URL provided.");
 
         // set some internal settings
@@ -150,8 +150,8 @@ var readCmdLine = function(argv) {
 
         // read optional input  files
         settings.cssFile = argv.c !== undefined ? argv.c : undefined;
-        if (settings.cssFile == "" || settings.cssFile == true ||
-            settings.cssFile == false)
+        if (settings.cssFile === "" || settings.cssFile === true ||
+            settings.cssFile === false)
             help("CSS option used, but no filepath provided.");
         // read optional cmd toggles
         settings.devMode = argv.d !== undefined ? true : false;
@@ -212,8 +212,8 @@ var resolveToFullyQualifiedUrl = function(settings) {
         request({
             url: searchUrl,
             timeout: 5000
-        }, function(error, response, body) {
-            if (error || response.statusCode != 200)
+        }, function(error, response, body) { // TODO Reduce complexity
+            if (error || response.statusCode !== 200)
                 logError("Could not resolve unqualified URI " + urlBefore,
                     undefined, true);
 
@@ -249,7 +249,7 @@ var getFaviconUrl = function(settings) {
             url: rootWebpath,
             timeout: 5000
         }, function(error, response, body) {
-            if (error || response.statusCode != 200) {
+            if (error || response.statusCode !== 200) {
                 logError("Could not resolve unqualified URI " + urlBefore,
                     undefined, true);
                 resolve(settings);
@@ -335,7 +335,7 @@ var getFavicon = function(settings) {
             resolve();
             return;
         }
-        if (settings.faviconUrl == undefined) {
+        if (settings.faviconUrl === undefined) {
             // return when previous step did not find a favicon
             settings.favicoIn = undefined;
             resolve();
