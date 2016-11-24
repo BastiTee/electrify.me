@@ -103,53 +103,53 @@ var cleanArray = function(actual) {
 //////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////////////////////
 
-var readSettingsFromFile = function(argv, settings) {
+var readSettingsFromFile = function(argv) {
     if (isVoid(argv.r))
-        return;
+        return "";
     try {
         settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
     } catch (err) {
         help("Error loading properties. " + err.message);
     }
     settings.pathToSettings = argv.r;
-    return true;
+    return settings;
 };
 
 var readCmdLine = function(argv) {
     return new Promise(function(resolve, reject) { // TODO Too complex!
-        if (!isVoid(argv.help) || !isVoid(argv.help))
+        if (!isVoid(argv.help) || !isVoid(argv.help)) {
             help();
+        }
         // try to read and evaluate settings file..
-        var settings = {};
-        var settingsRead = readSettingsFromFile(argv, settings);
-
+        var settings = readSettingsFromFile(argv);
+        var readFromFile = !isVoid(settings);
         // URL basic validation
-        if (!settingsRead)
+        if (!readFromFile) {
+            settings = {};
             settings.url = String(argv._);
-        if (isVoid(settings.url))
+        }
+        if (isVoid(settings.url)) {
             help("No URL provided.");
+        }
 
         // set some internal settings
         settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
         settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
         settings.workingDir = __udataDirname + "/" + settings.uriKey;
-
         settings.favicoIn = settings.workingDir + ".ico";
         settings.favicoOut = settings.workingDir + ".png";
 
-        if (settingsRead) {
+        if (readFromFile) {
             // dont parse cmd line in this case
             resolve(settings);
             return;
         }
 
-        // read optional input  files
+        // apply default settings
         settings.cssFile = argv.c;
         settings.devMode = !isVoid(argv.d);
         settings.maximized = !isVoid(argv.m);
-        settings.hideScrollbars = true;
-
-        // default window settings
+        settings.hideScrollbars = false;
         settings.windowSettings = {
             fullscreen: false,
             fullscreenable: true,
@@ -167,9 +167,6 @@ var readCmdLine = function(argv) {
 
 var openSplash = function() {
     return new Promise(function(resolve, reject) {
-
-        // resolve();
-        // return;
 
         var splash = new electron.BrowserWindow({
             width: 120,
@@ -245,7 +242,8 @@ var getFaviconUrl = function(settings) {
             $(links).each(function() {
                 var href = $(this).attr("href");
                 if (ico(href) || png(href)) {
-                    var relpath = rootWebpath + "/" + href.replace(/^\//, "");
+                    var relpath = vurl.isUri(href) ?
+                        href : rootWebpath + "/" + href.replace(/^\//, "");
                     candidates.push(relpath);
                 }
             });
@@ -303,7 +301,7 @@ var convertIcon = function(settings, icoFile) {
                 logError("Could not generate pgn. Will skip this step. " +
                     err.message);
                 // remove input file to allow retries
-                fs.unlinkSync(icoFile);
+                //fs.unlinkSync(icoFile);
                 resolve();
             }
             resolve();
@@ -431,13 +429,11 @@ var setupWebcontent = function(settings, splash) {
             settings.favicoOut = miconSettingsPath;
         }
 
-        // append internal window settings
         settings.windowSettings.icon = settings.favicoOut;
         settings.windowSettings.show = false;
         settings.windowSettings.webPreferences = {
             nodeIntegration: false
         };
-        console.log(settings.windowSettings);
         var bw = new electron.BrowserWindow(settings.windowSettings);
         bw.setMenu(null); // disable default menu
         if (settings.devMode)
@@ -516,14 +512,14 @@ var createDesktopLinks = function(settings) {
     return new Promise(function(resolve, reject) {
 
         var urlObj = url.parse(settings.url);
-        settings.settingsFile = path.join(__udataDirname, "electrify-" +
-            urlObj.hostname + ".settings.txt");
+        settings.settingsFile = path.join(__udataDirname,
+            settings.uriKey + ".settings.txt");
 
         if (os.platform() === "win32") {
 
             var symlink = __dirname + "\\ext\\shortcut-windows.bat";
             var symlinkFile = path.join(__udataDirname,
-                "Electrify " + urlObj.hostname + ".lnk");
+                settings.uriKey + ".lnk");
 
             var opts = [
                 "-linkfile",
@@ -538,7 +534,7 @@ var createDesktopLinks = function(settings) {
                 "-description",
                 "Electrify " + urlObj.hostname,
                 "-iconlocation",
-                settings.favicoIn
+                settings.favicoOut
             ];
 
             childProcess.execFile(symlink, opts,
