@@ -2,6 +2,8 @@
 > Create a native-like app from a website. Just like that.
 
 [![GitHub release](https://img.shields.io/badge/version-0.2.2-green.svg)](https://github.com/BastiTee/electrify.me/releases/latest)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1ce6531d28d84cffa342526dc183464b)](https://www.codacy.com/app/basti-tee/electrify-me?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=BastiTee/electrify.me&amp;utm_campaign=Badge_Grade)
+
 ## About
 
 *electrify.me* is a tool to run a website as native-like windows, mac or linux application. Electrified websites are available in your task bar, start menu or launchers. Just like a native application.
