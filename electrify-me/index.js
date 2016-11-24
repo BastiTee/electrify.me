@@ -27,9 +27,85 @@ const __parentDirname = path.resolve(__dirname, "..");
 const __udataDirname = path.join(__parentDirname, "_electrified");
 
 //////////////////////////////////////////////////////////////////
+// HELPER FUNCTIONS
+//////////////////////////////////////////////////////////////////
+
+var help = function(message) {
+    if (message !== undefined)
+        console.log(message);
+    console.log("Usage:   <electrify> [URL] ([OPTS])");
+    console.log("");
+    console.log("Options: ");
+    console.log("    -c <FILE>   CSS to be injected into website.");
+    console.log("    -m          Window maximized.");
+    console.log("    -d          Run in development mode.");
+    console.log("    -r <FILE>   Read settings from local file " +
+        "(all other options are ignored).");
+    console.log("    -h          Print this help.");
+    console.log("");
+    console.log("Example: <electrify> https://web.whatsapp.com " +
+        "-c inject.css -d");
+
+    // display of help always terminates the application.
+    process.exit(0);
+};
+
+var logError = function(message, exception, exit) {
+    if (message !== undefined)
+        console.log("[ERROR] " + message);
+    if (exception !== undefined)
+        console.log("        Exception was: " + exception);
+    if (exit)
+        process.exit(0);
+};
+
+var fileExists = function(filename) {
+    try {
+        fs.accessSync(filename, fs.F_OK | fs.R_OK);
+        var stat = fs.statSync(filename);
+        if (stat["size"] == 0)
+            return false;
+        return true;
+    } catch (err) {
+        return false;
+    }
+};
+
+var mkdirSilent = function(directory) {
+    try {
+        fs.mkdirSync(directory);
+    } catch (ex) {
+        if (ex.code !== "EEXIST")
+            help(ex.message);
+    }
+};
+
+var png = function(filename) {
+    return (filename.toLowerCase().indexOf(".png") >= 0 &&
+        filename.toLowerCase().indexOf("fluidicon") <= 0);
+};
+
+var ico = function(filename) {
+    return filename.toLowerCase().indexOf(".ico") >= 0;
+};
+
+var cleanArray = function(actual) {
+    var newArray = new Array();
+    for (var i = 0; i < actual.length; i++) {
+        if (actual[i]) {
+            newArray.push(actual[i]);
+        }
+    }
+    return newArray;
+};
+
+//////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////////////////////
 
 var readCmdLine = function(argv) {
+
+    // TODO Reduce complexity!
+
     return new Promise(function(resolve, reject) {
 
         var settings = {};
@@ -50,7 +126,7 @@ var readCmdLine = function(argv) {
             }
             readSettingsFromFile = true;
             settings.pathToSettings = argv.r;
-        };
+        }
 
         // URL basic validation
         if (!readSettingsFromFile)
@@ -616,79 +692,6 @@ var startApplication = function(argv) {
         console.log("Stored settings file.");
         console.log("\n--- Electrify initialization done.");
     });
-};
-
-//////////////////////////////////////////////////////////////////
-// HELPER FUNCTIONS
-//////////////////////////////////////////////////////////////////
-
-var help = function(message) {
-    if (message !== undefined)
-        console.log(message);
-    console.log("Usage:   <electrify> [URL] ([OPTS])");
-    console.log("");
-    console.log("Options: ");
-    console.log("    -c <FILE>   CSS to be injected into website.");
-    console.log("    -m          Window maximized.");
-    console.log("    -d          Run in development mode.");
-    console.log("    -r <FILE>   Read settings from local file " +
-        "(all other options are ignored).");
-    console.log("    -h          Print this help.");
-    console.log("");
-    console.log("Example: <electrify> https://web.whatsapp.com " +
-        "-c inject.css -d");
-
-    // display of help always terminates the application.
-    process.exit(0);
-};
-
-var logError = function(message, exception, exit) {
-    if (message !== undefined)
-        console.log("[ERROR] " + message);
-    if (exception !== undefined)
-        console.log("        Exception was: " + exception);
-    if (exit)
-        process.exit(0);
-};
-
-var fileExists = function(filename) {
-    try {
-        fs.accessSync(filename, fs.F_OK | fs.R_OK);
-        var stat = fs.statSync(filename);
-        if (stat["size"] == 0)
-            return false;
-        return true;
-    } catch (err) {
-        return false;
-    }
-};
-
-var mkdirSilent = function(directory) {
-    try {
-        fs.mkdirSync(directory);
-    } catch (ex) {
-        if (ex.code !== "EEXIST")
-            help(ex.message);
-    }
-};
-
-var png = function(filename) {
-    return (filename.toLowerCase().indexOf(".png") >= 0 &&
-        filename.toLowerCase().indexOf("fluidicon") <= 0);
-};
-
-var ico = function(filename) {
-    return filename.toLowerCase().indexOf(".ico") >= 0;
-};
-
-var cleanArray = function(actual) {
-    var newArray = new Array();
-    for (var i = 0; i < actual.length; i++) {
-        if (actual[i]) {
-            newArray.push(actual[i]);
-        }
-    }
-    return newArray;
 };
 
 //////////////////////////////////////////////////////////////////
