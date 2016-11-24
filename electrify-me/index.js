@@ -367,7 +367,7 @@ var convertFaviconToPng = function(settings) {
             }
         }
         var dlChain = Promise.resolve();
-        Promise.all(promises).then(values => {
+        Promise.all(promises).then((values) => {
             console.log(values);
             resolve(settings);
         });
@@ -467,7 +467,7 @@ var setupWebcontent = function(settings, splash) {
                     e.preventDefault();
                     electron.shell.openExternal(url);
                 };
-            }
+            };
         bw.webContents.on("new-window", handleRedirect);
     });
 };
