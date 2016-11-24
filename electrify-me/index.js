@@ -27,6 +27,69 @@ const __parentDirname = path.resolve(__dirname, "..");
 const __udataDirname = path.join(__parentDirname, "_electrified");
 
 //////////////////////////////////////////////////////////////////
+// HELPER FUNCTIONS
+//////////////////////////////////////////////////////////////////
+
+function help(message) {
+    if (message !== undefined)
+        console.log(message);
+    console.log("Usage:   <electrify> [URL] ([OPTS])");
+    console.log("");
+    console.log("Options: ");
+    console.log("    -c <FILE>   CSS to be injected into website.");
+    console.log("    -m          Window maximized.");
+    console.log("    -d          Run in development mode.");
+    console.log("    -r <FILE>   Read settings from local file " +
+        "(all other options are ignored).");
+    console.log("    -h          Print this help.");
+    console.log("");
+    console.log("Example: <electrify> https://web.whatsapp.com " +
+        "-c inject.css -d");
+
+    // display of help always terminates the application.
+    process.exit(0);
+};
+
+var logError = function(message, exception, exit) {
+    if (message !== undefined)
+        console.log("[ERROR] " + message);
+    if (exception !== undefined)
+        console.log("        Exception was: " + exception);
+    if (exit)
+        process.exit(0);
+}
+
+var fileExists = function(filename) {
+    try {
+        fs.accessSync(filename, fs.F_OK | fs.R_OK);
+        var stat = fs.statSync(filename);
+        if (stat["size"] == 0)
+            return false;
+        return true;
+    } catch (err) {
+        return false;
+    }
+};
+
+var mkdirSilent = function(directory) {
+    try {
+        fs.mkdirSync(directory);
+    } catch (ex) {
+        if (ex.code !== "EEXIST")
+            help(ex.message);
+    }
+}
+
+var png = function(filename) {
+    return (filename.toLowerCase().indexOf(".png") >= 0 &&
+        filename.toLowerCase().indexOf("fluidicon") <= 0);
+}
+
+var ico = function(filename) {
+    return filename.toLowerCase().indexOf(".ico") >= 0;
+}
+
+//////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////////////////////
 
 var readCmdLine = function(argv) {
@@ -34,12 +97,12 @@ var readCmdLine = function(argv) {
 
         var settings = {};
 
-        if (argv.h != undefined || argv.help != undefined)
+        if (argv.h !== undefined || argv.help !== undefined)
             help();
 
         // try to read and evaluate settings file..
         var readSettingsFromFile = false;
-        if (argv.r != undefined) {
+        if (argv.r !== undefined) {
             if (argv.r == "" || argv.r == true || argv.r == false) {
                 help("Read-settings option used, but no filepath provided.");
             }
@@ -73,13 +136,13 @@ var readCmdLine = function(argv) {
         }
 
         // read optional input  files
-        settings.cssFile = argv.c != undefined ? argv.c : undefined;
+        settings.cssFile = argv.c !== undefined ? argv.c : undefined;
         if (settings.cssFile == "" || settings.cssFile == true ||
             settings.cssFile == false)
             help("CSS option used, but no filepath provided.");
         // read optional cmd toggles
-        settings.devMode = argv.d != undefined ? true : false;
-        settings.maximized = argv.m != undefined ? true : false;
+        settings.devMode = argv.d !== undefined ? true : false;
+        settings.maximized = argv.m !== undefined ? true : false;
         settings.hideScrollbars = true;
 
         // default window settings
@@ -356,7 +419,7 @@ var selectBestFavicon = function(settings) {
             next();
         });
         walker.on("end", function() {
-            if (selectedFile != undefined)
+            if (selectedFile !== undefined)
                 settings.favicoOut = path.join(settings.workingDir, selectedFile);
             resolve(settings);
         });
@@ -381,11 +444,11 @@ var setupWebcontent = function(settings, splash) {
                 settingsDir == undefined || settings.manualIcon == undefined) ?
             settings.manualIcon : path.join(settingsDir, settings.manualIcon);
 
-        if (miconAbsPath != undefined && fileExists(miconAbsPath)) {
+        if (miconAbsPath !== undefined && fileExists(miconAbsPath)) {
             console.log("Manual icon path resolved. Will set icon to: " +
                 miconAbsPath);
             settings.favicoOut = miconAbsPath;
-        } else if (miconSettingsPath != undefined &&
+        } else if (miconSettingsPath !== undefined &&
             fileExists(miconSettingsPath)) {
             console.log("Manual icon path resolved. Will set icon to: " +
                 miconSettingsPath);
@@ -410,7 +473,7 @@ var setupWebcontent = function(settings, splash) {
             bw = null;
         });
         bw.webContents.on("did-finish-load", function() {
-            if (splash != undefined)
+            if (splash !== undefined)
                 splash.destroy();
             if (settings.maximized)
                 bw.maximize();
@@ -418,7 +481,7 @@ var setupWebcontent = function(settings, splash) {
         });
         bw.webContents.on("did-fail-load", function(errorCode,
             errorDescription, validatedURL) {
-            if (splash != undefined)
+            if (splash !== undefined)
                 splash.destroy();
             logError("Electrifying failed unrecoverable.", errorCode, true);
         });
@@ -653,66 +716,3 @@ app.on("ready", function() {
     const argv = minimist(process.argv.slice(2));
     startApplication(argv);
 });
-
-//////////////////////////////////////////////////////////////////
-// HELPER FUNCTIONS
-//////////////////////////////////////////////////////////////////
-
-function help(message) {
-    if (message != undefined)
-        console.log(message);
-    console.log("Usage:   <electrify> [URL] ([OPTS])");
-    console.log("");
-    console.log("Options: ");
-    console.log("    -c <FILE>   CSS to be injected into website.");
-    console.log("    -m          Window maximized.");
-    console.log("    -d          Run in development mode.");
-    console.log("    -r <FILE>   Read settings from local file " +
-        "(all other options are ignored).");
-    console.log("    -h          Print this help.");
-    console.log("");
-    console.log("Example: <electrify> https://web.whatsapp.com " +
-        "-c inject.css -d");
-
-    // display of help always terminates the application.
-    process.exit(0);
-};
-
-var logError = function(message, exception, exit) {
-    if (message != undefined)
-        console.log("[ERROR] " + message);
-    if (exception != undefined)
-        console.log("        Exception was: " + exception);
-    if (exit)
-        process.exit(0);
-}
-
-var fileExists = function(filename) {
-    try {
-        fs.accessSync(filename, fs.F_OK | fs.R_OK);
-        var stat = fs.statSync(filename);
-        if (stat["size"] == 0)
-            return false;
-        return true;
-    } catch (err) {
-        return false;
-    }
-};
-
-var mkdirSilent = function(directory) {
-    try {
-        fs.mkdirSync(directory);
-    } catch (ex) {
-        if (ex.code !== "EEXIST")
-            help(ex.message);
-    }
-}
-
-var png = function(filename) {
-    return (filename.toLowerCase().indexOf(".png") >= 0 &&
-        filename.toLowerCase().indexOf("fluidicon") <= 0);
-}
-
-var ico = function(filename) {
-    return filename.toLowerCase().indexOf(".ico") >= 0;
-}
