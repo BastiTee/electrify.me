@@ -236,12 +236,8 @@ var getFaviconUrl = function(settings) {
             url: rootWebpath,
             timeout: 5000
         }, function(error, response, body) {
-            if (error || response.statusCode !== 200) {
-                logError("Could not resolve unqualified URI " + rootWebpath,
-                    undefined, true);
-                resolve(settings);
-            }
-
+            if (error || response.statusCode !== 200)
+                help("Could not get favicon." + rootWebpath);
             var candidates = [];
             var pageContent = $.load(body);
             var links = pageContent("link");
@@ -462,7 +458,7 @@ var setupWebcontent = function(settings, splash) {
             errorDescription, validatedURL) {
             if (!isVoid(splash))
                 splash.destroy();
-            logError("Electrifying failed unrecoverable.", errorCode, true);
+            help("Electrifying failed unrecoverable." + errorCode);
         });
         // hook urls to default browser
         var handleRedirect = (e, url) => {
