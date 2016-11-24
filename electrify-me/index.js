@@ -30,6 +30,10 @@ const __udataDirname = path.join(__parentDirname, "_electrified");
 // HELPER FUNCTIONS
 //////////////////////////////////////////////////////////////////
 
+var isVoid = function(object) {
+    return typeof object === "undefined" || object === null || object === "";
+};
+
 var help = function(message) {
     if (!isVoid(message))
         console.log(message);
@@ -96,10 +100,6 @@ var cleanArray = function(actual) {
             newArray.push(actual[i]);
     }
     return newArray;
-};
-
-var isVoid = function(object) {
-    return typeof object === "undefined" || object === null || object === "";
 };
 
 //////////////////////////////////////////////////////////////////
