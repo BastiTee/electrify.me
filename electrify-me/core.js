@@ -23,6 +23,60 @@ var core = (function() {
     const __parentDirname = path.resolve(__dirname, "..");
     const __udataDirname = path.join(__parentDirname, "_electrified");
 
+    var downloadFile = function(from, to) {
+        return new Promise(function(resolve, reject) {
+
+            if (helper.fileExists(to)) {
+                resolve(to);
+                return;
+            }
+
+            var stream = request({
+                url: from,
+                timeout: 5000
+            }, function(error) {
+                if (error) {
+                    console.log(error);
+                    fs.unlinkSync(to);
+                    resolve();
+                    return;
+                }
+            }).pipe(fs.createWriteStream(to));
+            stream.on("finish", function() {
+                resolve(to);
+            });
+            stream.on("error", function() {
+                resolve();
+            });
+        });
+    };
+
+    var convertIcon = function(settings, icoFile) {
+        return new Promise(function(resolve, reject) {
+            var convert = "convert";
+            if (os.platform() === "win32") {
+                convert = __dirname + "/ext/imagemagick-windows/convert.exe";
+            } else {
+                console.log("No built-in resize backend for this platform " +
+                    "present. Will try to use default.");
+            }
+
+            var opts = [icoFile, icoFile + ".png"];
+
+            cp.execFile(convert, opts, function(err, stdout, stderr) {
+                if (err) {
+                    console.log(
+                        "Could not generate pgn. Will skip this step. " +
+                        err.message);
+                    // remove input file to allow retries
+                    //fs.unlinkSync(icoFile);
+                    resolve();
+                }
+                resolve();
+            });
+        });
+    };
+
     exports.readCmdLine = function(argv) {
         return new Promise(function(resolve, reject) { // TODO Too complex!
             if (!helper.isVoid(argv.help) || !helper.isVoid(argv.help)) {
@@ -162,60 +216,6 @@ var core = (function() {
 
                 settings.faviconUrl = candidates;
                 resolve(settings);
-            });
-        });
-    };
-
-    var downloadFile = function(from, to) {
-        return new Promise(function(resolve, reject) {
-
-            if (helper.fileExists(to)) {
-                resolve(to);
-                return;
-            }
-
-            var stream = request({
-                url: from,
-                timeout: 5000
-            }, function(error) {
-                if (error) {
-                    console.log(error);
-                    fs.unlinkSync(to);
-                    resolve();
-                    return;
-                }
-            }).pipe(fs.createWriteStream(to));
-            stream.on("finish", function() {
-                resolve(to);
-            });
-            stream.on("error", function() {
-                resolve();
-            });
-        });
-    };
-
-    exports.convertIcon = function(settings, icoFile) {
-        return new Promise(function(resolve, reject) {
-            var convert = "convert";
-            if (os.platform() === "win32") {
-                convert = __dirname + "/ext/imagemagick-windows/convert.exe";
-            } else {
-                console.log("No built-in resize backend for this platform " +
-                    "present. Will try to use default.");
-            }
-
-            var opts = [icoFile, icoFile + ".png"];
-
-            cp.execFile(convert, opts, function(err, stdout, stderr) {
-                if (err) {
-                    console.log(
-                        "Could not generate pgn. Will skip this step. " +
-                        err.message);
-                    // remove input file to allow retries
-                    //fs.unlinkSync(icoFile);
-                    resolve();
-                }
-                resolve();
             });
         });
     };
@@ -541,4 +541,4 @@ var core = (function() {
             resolve(settings);
         });
     };
-})();
+}());
