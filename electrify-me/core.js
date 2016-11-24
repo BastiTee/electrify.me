@@ -78,7 +78,7 @@ var core = (function() {
     };
 
     exports.readCmdLine = function(argv) {
-        return new Promise(function(resolve, reject) { // TODO Too complex!
+        return new Promise(function(resolve, reject) {
             if (!helper.isVoid(argv.help) || !helper.isVoid(argv.help)) {
                 helper.help();
             }
@@ -162,7 +162,7 @@ var core = (function() {
             request({
                 url: searchUrl,
                 timeout: 5000
-            }, function(error, response, body) { // TODO Too complex!
+            }, function(error, response, body) {
                 if (error || response.statusCode !== 200)
                     helper.help(
                         "Could not resolve unqualified URI " + urlBefore);
@@ -221,7 +221,7 @@ var core = (function() {
     };
 
     exports.getFavicon = function(settings) {
-        return new Promise(function(resolve, reject) { // TODO Too complex!
+        return new Promise(function(resolve, reject) {
             // skip on existing png icon file
             if (helper.fileExists(settings.favicoOut)) {
                 resolve();
