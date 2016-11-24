@@ -31,9 +31,8 @@ const __udataDirname = path.join(__parentDirname, "_electrified");
 //////////////////////////////////////////////////////////////////
 
 var help = function(message) {
-    if (!isVoid(message)) {
+    if (!isVoid(message))
         console.log(message);
-    }
     console.log("Usage:   <electrify> [URL] ([OPTS])");
     console.log("");
     console.log("Options: ");
@@ -52,7 +51,7 @@ var help = function(message) {
 };
 
 var logError = function(message, exception, exit) {
-    if (!isVoid(message)
+    if (!isVoid(message))
         console.log("[ERROR] " + message);
     if (!isVoid(exception))
         console.log("        Exception was: " + exception);
@@ -93,9 +92,8 @@ var ico = function(filename) {
 var cleanArray = function(actual) {
     var newArray = new Array();
     for (var i = 0; i < actual.length; i++) {
-        if (actual[i]) {
+        if (actual[i])
             newArray.push(actual[i]);
-        }
     }
     return newArray;
 };
@@ -130,7 +128,7 @@ var readCmdLine = function(argv) {
         // URL basic validation
         if (!settingsRead)
             settings.url = String(argv._);
-        if (isVoid(settings.url)
+        if (isVoid(settings.url))
             help("No URL provided.");
 
         // set some internal settings
@@ -429,7 +427,7 @@ var setupWebcontent = function(settings, splash) {
         var miconAbsPath = settings.manualIcon;
         var miconSettingsPath = (
                 isVoid(settingsDir) || isVoid(settings.manualIcon) ?
-            settings.manualIcon : path.join(settingsDir, settings.manualIcon);
+            settings.manualIcon : path.join(settingsDir, settings.manualIcon));
 
         if (!isVoid(miconAbsPath) && fileExists(miconAbsPath)) {
             console.log("Manual icon path resolved. Will set icon to: " +
@@ -481,7 +479,6 @@ var setupWebcontent = function(settings, splash) {
             }
             //bw.webContents.on("will-navigate", handleRedirect)
         bw.webContents.on("new-window", handleRedirect)
-        console.log("-foo");
     });
 };
 
