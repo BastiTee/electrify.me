@@ -221,7 +221,7 @@ var core = (function() {
     };
 
     exports.getFavicon = function(settings) {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function(resolve, reject) { // TODO Too complex!
             // skip on existing png icon file
             if (helper.fileExists(settings.favicoOut)) {
                 resolve();
@@ -235,8 +235,6 @@ var core = (function() {
             }
 
             var foundPng = false;
-
-
 
             var promises = [];
             for (var i = 0; i < settings.faviconUrl.length; i++) {
@@ -264,7 +262,6 @@ var core = (function() {
 
     exports.convertFaviconToPng = function(settings) {
         return new Promise(function(resolve, reject) {
-
 
             // skip on existing png icon file
             if (helper.fileExists(settings.favicoOut)) {
@@ -315,7 +312,7 @@ var core = (function() {
     };
 
     exports.setupWebcontent = function(settings, splash) {
-        return new Promise(function(resolve, reject) { // TODO Too complex!
+        return new Promise(function(resolve, reject) {
 
             // if no favicon was found, set it to default
             if (!helper.fileExists(settings.favicoOut)) {
