@@ -1,4 +1,4 @@
-var helper = function() {
+var helper = (function() {
     "use-strict";
     const fs = require("fs");
 
@@ -7,7 +7,7 @@ var helper = function() {
     };
 
     exports.help = function(message) {
-        if (!isVoid(message))
+        if (!this.isVoid(message))
             console.log(message);
         console.log("Usage:   <electrify> [URL] ([OPTS])");
         console.log("");
@@ -43,7 +43,7 @@ var helper = function() {
             fs.mkdirSync(directory);
         } catch (ex) {
             if (ex.code !== "EEXIST")
-                help(ex.message);
+                this.help(ex.message);
         }
     };
 
@@ -78,4 +78,4 @@ var helper = function() {
         return settings;
     };
 
-}();
+}());
