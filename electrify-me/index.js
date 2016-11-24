@@ -54,13 +54,11 @@ var help = function(message) {
     process.exit(0);
 };
 
-var logError = function(message, exception, exit) {
+var logError = function(message, exception) {
     if (!isVoid(message))
         console.log("[ERROR] " + message);
     if (!isVoid(exception))
         console.log("        Exception was: " + exception);
-    if (exit)
-        process.exit(0);
 };
 
 var fileExists = function(filename) {
@@ -207,19 +205,15 @@ var resolveToFullyQualifiedUrl = function(settings) {
             timeout: 5000
         }, function(error, response, body) { // TODO Reduce complexity
             if (error || response.statusCode !== 200)
-                logError("Could not resolve unqualified URI " + urlBefore,
-                    undefined, true);
-
+                help("Could not resolve unqualified URI " + urlBefore);
             var json = JSON.parse(body);
             try {
                 settings.url = json.Results[0].FirstURL;
                 if (!vurl.isWebUri(settings.url))
-                    logError("Could not resolve unqualified URI " + urlBefore,
-                        undefined, true);
+                    help("Could not resolve unqualified URI " + urlBefore);
                 resolve(settings);
             } catch (err) {
-                logError("Could not resolve unqualified URI " + urlBefore,
-                    err, true);
+                help("Could not resolve unqualified URI " + urlBefore);
             }
         });
     });
