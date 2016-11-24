@@ -116,7 +116,7 @@ var readSettingsFromFile = function(argv, settings) {
 };
 
 var readCmdLine = function(argv) {
-    return new Promise(function(resolve, reject) { // TODO To complex!
+    return new Promise(function(resolve, reject) { // TODO Too complex!
         if (!isVoid(argv.help) || !isVoid(argv.help))
             help();
         // try to read and evaluate settings file..
@@ -203,7 +203,7 @@ var resolveToFullyQualifiedUrl = function(settings) {
         request({
             url: searchUrl,
             timeout: 5000
-        }, function(error, response, body) { // TODO Reduce complexity
+        }, function(error, response, body) { // TODO Too complex!
             if (error || response.statusCode !== 200)
                 help("Could not resolve unqualified URI " + urlBefore);
             var json = JSON.parse(body);
@@ -312,7 +312,7 @@ var convertIcon = function(settings, icoFile) {
 };
 
 var getFavicon = function(settings) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve, reject) { // TODO Too complex!
         // skip on existing png icon file
         if (fileExists(settings.favicoOut)) {
             resolve();
