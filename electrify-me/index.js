@@ -31,7 +31,7 @@ const __udataDirname = path.join(__parentDirname, "_electrified");
 //////////////////////////////////////////////////////////////////
 
 var help = function(message) {
-    if (message !== undefined) {
+    if (!isVoid(message)) {
         console.log(message);
     }
     console.log("Usage:   <electrify> [URL] ([OPTS])");
@@ -52,9 +52,9 @@ var help = function(message) {
 };
 
 var logError = function(message, exception, exit) {
-    if (message !== undefined)
+    if (!isVoid(message)
         console.log("[ERROR] " + message);
-    if (exception !== undefined)
+    if (!isVoid(exception))
         console.log("        Exception was: " + exception);
     if (exit)
         process.exit(0);
@@ -101,7 +101,7 @@ var cleanArray = function(actual) {
 };
 
 var isVoid = function(object) {
-    return typeof object === "undefined" || object === null || object == "";
+    return typeof object === "undefined" || object === null || object === "";
 };
 
 //////////////////////////////////////////////////////////////////
@@ -130,7 +130,7 @@ var readCmdLine = function(argv) {
         // URL basic validation
         if (!settingsRead)
             settings.url = String(argv._);
-        if (settings.url === undefined || settings.url === "")
+        if (isVoid(settings.url)
             help("No URL provided.");
 
         // set some internal settings
@@ -148,13 +148,9 @@ var readCmdLine = function(argv) {
         }
 
         // read optional input  files
-        settings.cssFile = argv.c !== undefined ? argv.c : undefined;
-        if (settings.cssFile === "" || settings.cssFile === true ||
-            settings.cssFile === false)
-            help("CSS option used, but no filepath provided.");
-        // read optional cmd toggles
-        settings.devMode = argv.d !== undefined ? true : false;
-        settings.maximized = argv.m !== undefined ? true : false;
+        settings.cssFile = argv.c;
+        settings.devMode = !isVoid(argv.d);
+        settings.maximized = !isVoid(argv.m);
         settings.hideScrollbars = true;
 
         // default window settings
@@ -334,7 +330,7 @@ var getFavicon = function(settings) {
             resolve();
             return;
         }
-        if (settings.faviconUrl === undefined) {
+        if (isVoid(settings.faviconUrl)) {
             // return when previous step did not find a favicon
             settings.favicoIn = undefined;
             resolve();
@@ -410,7 +406,7 @@ var selectBestFavicon = function(settings) {
             next();
         });
         walker.on("end", function() {
-            if (selectedFile !== undefined)
+            if (!isVoid(selectedFile))
                 settings.favicoOut = path.join(settings.workingDir, selectedFile);
             resolve(settings);
         });
@@ -428,19 +424,18 @@ var setupWebcontent = function(settings, splash) {
         }
 
         // if manual icon is set, try to set it ..
-        var settingsDir = settings.pathToSettings === undefined ? undefined :
+        var settingsDir = isVoid(settings.pathToSettings) ? undefined :
             path.resolve(settings.pathToSettings, "..");
         var miconAbsPath = settings.manualIcon;
         var miconSettingsPath = (
-                settingsDir === undefined ||
-                settings.manualIcon === undefined) ?
+                isVoid(settingsDir) || isVoid(settings.manualIcon) ?
             settings.manualIcon : path.join(settingsDir, settings.manualIcon);
 
-        if (miconAbsPath !== undefined && fileExists(miconAbsPath)) {
+        if (!isVoid(miconAbsPath) && fileExists(miconAbsPath)) {
             console.log("Manual icon path resolved. Will set icon to: " +
                 miconAbsPath);
             settings.favicoOut = miconAbsPath;
-        } else if (miconSettingsPath !== undefined &&
+        } else if (!isVoid(miconSettingsPath) &&
             fileExists(miconSettingsPath)) {
             console.log("Manual icon path resolved. Will set icon to: " +
                 miconSettingsPath);
@@ -465,7 +460,7 @@ var setupWebcontent = function(settings, splash) {
             bw = null;
         });
         bw.webContents.on("did-finish-load", function() {
-            if (splash !== undefined)
+            if (!isVoid(splash))
                 splash.destroy();
             if (settings.maximized)
                 bw.maximize();
@@ -473,7 +468,7 @@ var setupWebcontent = function(settings, splash) {
         });
         bw.webContents.on("did-fail-load", function(errorCode,
             errorDescription, validatedURL) {
-            if (splash !== undefined)
+            if (!isVoid(splash))
                 splash.destroy();
             logError("Electrifying failed unrecoverable.", errorCode, true);
         });
@@ -496,14 +491,14 @@ var injectCss = function(settings, bw) {
         if (settings.hideScrollbars === true)
             bw.webContents.insertCSS("body { overflow:hidden !important; }");
 
-        if (settings.cssFile === undefined) {
+        if (isVoid(settings.cssFile)) {
             resolve(bw);
             return;
         }
 
         var cssFile = settings.cssFile;
         if (!fileExists(cssFile)) {
-            if (settings.pathToSettings === undefined) {
+            if (isVoid(settings.pathToSettings)) {
                 resolve(bw);
                 return;
             }
@@ -622,12 +617,10 @@ var storeSettings = function(settings) {
         delete settings.favicoOut;
         delete settings.workingDir;
         delete settings.settingsFile;
-        if (settings.cssFile === undefined) {
+        if (isVoid(settings.cssFile))
             settings.cssFile = null;
-        }
-        if (settings.manualIcon === undefined) {
+        if (isVoid(settings.manualIcon))
             settings.manualIcon = null;
-        }
 
         fs.writeFile(sFile,
             JSON.stringify(settings, null, 2), "utf-8",
