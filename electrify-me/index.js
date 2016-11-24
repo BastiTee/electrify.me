@@ -413,8 +413,8 @@ var setupWebcontent = function(settings, splash) {
 
         // if manual icon is set, try to set it ..
         var settingsDir;
-        if (!isVoid(settings.pathToSettings)) ? path.resolve(
-            settings.pathToSettings, "..");
+        if (!isVoid(settings.pathToSettings))
+            path.resolve(settings.pathToSettings, "..");
         var miconAbsPath = settings.manualIcon;
         var miconSettingsPath = (
                 isVoid(settingsDir) || isVoid(settings.manualIcon) ?
