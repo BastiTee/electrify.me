@@ -7,7 +7,7 @@ const https = require("https");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const child_process = require("child_process");
+const childProcess = require("childProcess");
 
 // External dependencies
 const $ = require("cheerio");
@@ -31,8 +31,9 @@ const __udataDirname = path.join(__parentDirname, "_electrified");
 //////////////////////////////////////////////////////////////////
 
 var help = function(message) {
-    if (message !== undefined)
+    if (message !== undefined) {
         console.log(message);
+    }
     console.log("Usage:   <electrify> [URL] ([OPTS])");
     console.log("");
     console.log("Options: ");
@@ -114,7 +115,7 @@ var readSettingsFromFile = function(argv) {
     }
     settings.pathToSettings = argv.r;
     return true;
-}
+};
 
 var readCmdLine = function(argv) {
 
@@ -252,19 +253,19 @@ var getFaviconUrl = function(settings) {
             timeout: 5000
         }, function(error, response, body) {
             if (error || response.statusCode !== 200) {
-                logError("Could not resolve unqualified URI " + urlBefore,
+                logError("Could not resolve unqualified URI " + rootWebpath,
                     undefined, true);
                 resolve(settings);
             }
 
             var candidates = [];
             var pageContent = $.load(body);
-            var links = pageContent('link');
+            var links = pageContent("link");
 
             $(links).each(function() {
-                var href = $(this).attr('href');
+                var href = $(this).attr("href");
                 if (ico(href) || png(href)) {
-                    var relpath = rootWebpath + '/' + href.replace(/^\//, '')
+                    var relpath = rootWebpath + "/" + href.replace(/^\//, "");
                     candidates.push(relpath);
                 }
             });
@@ -294,12 +295,12 @@ var downloadFile = function(from, to) {
                 return;
             }
         }).pipe(fs.createWriteStream(to));
-        stream.on('finish', function() {
+        stream.on("finish", function() {
             resolve(to);
         });
-        stream.on('error', function() {
+        stream.on("error", function() {
             resolve();
-        })
+        });
     });
 };
 
@@ -317,7 +318,7 @@ var convertIcon = function(settings, icoFile) {
 
         console.log("opts: " + opts + " << " + settings.faviconIn);
 
-        child_process.execFile(convert, opts, function(err, stdout, stderr) {
+        childProcess.execFile(convert, opts, function(err, stdout, stderr) {
             if (err) {
                 logError("Could not generate pgn. Will skip this step. " +
                     err.message);
@@ -349,7 +350,7 @@ var getFavicon = function(settings) {
         var promises = [];
         for (var i in settings.faviconUrl) {
             var favUrl = settings.faviconUrl[i];
-            var filename = __udataDirname + "/" + settings.uriKey + "/" + favUrl.replace(/.*\/([^/]*)/, '\$1');
+            var filename = __udataDirname + "/" + settings.uriKey + "/" + favUrl.replace(/.*\/([^/]*)/, "\$1");
 
             if (png(favUrl))
                 foundPng = true;
@@ -560,7 +561,7 @@ var createDesktopLinks = function(settings) {
                 settings.favicoIn
             ];
 
-            child_process.execFile(symlink, opts,
+            childProcess.execFile(symlink, opts,
                 function(err, stdout, stderr) {
                     if (err)
                         logError("Could not generate symlink. ", err);
@@ -579,7 +580,7 @@ var createDesktopLinks = function(settings) {
             var targetFile = path.join(__udataDirname,
                 settings.uriKey + ".desktop");
             var stream = fs.createWriteStream(targetFile);
-            stream.once('open', function(fd) {
+            stream.once("open", function(fd) {
                 stream.write("[Desktop Entry]\n");
                 stream.write("Version=0.2.2\n");
                 stream.write("Name=Electrify " + urlObj.hostname + "\n");
