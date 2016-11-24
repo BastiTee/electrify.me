@@ -230,7 +230,7 @@ var getFaviconUrl = function(settings) {
         }
 
         var rootWebpath = settings.url.replace(/:\/\//, "@").replace(/\/.*/g, "").replace(/@/, "://");
-        console.log("Root webpath for favicon-search: " + rootWebpath)
+        console.log("Root webpath for favicon-search: " + rootWebpath);
 
         request({
             url: rootWebpath,
@@ -320,7 +320,7 @@ var getFavicon = function(settings) {
         }
         if (isVoid(settings.faviconUrl)) {
             // return when previous step did not find a favicon
-            settings.favicoIn = undefined;
+            delete settings.favicoIn;
             resolve();
             return;
         }
@@ -342,7 +342,7 @@ var getFavicon = function(settings) {
         }
 
         var dlChain = Promise.resolve();
-        Promise.all(promises).then(values => {
+        Promise.all(promises).then((values) => {
             values = cleanArray(values);
             settings.favicoIn = values;
             resolve(settings);
@@ -378,7 +378,7 @@ var selectBestFavicon = function(settings) {
     return new Promise(function(resolve, reject) {
 
         var maxSize = 0;
-        var selectedFile = undefined;
+        var selectedFile;
         var candPatt = new RegExp(".*\\.png$", "i");
 
         var walker = walk.walk(settings.workingDir, {
@@ -412,8 +412,9 @@ var setupWebcontent = function(settings, splash) {
         }
 
         // if manual icon is set, try to set it ..
-        var settingsDir = isVoid(settings.pathToSettings) ? undefined :
-            path.resolve(settings.pathToSettings, "..");
+        var settingsDir;
+        if (!isVoid(settings.pathToSettings)) ? path.resolve(
+            settings.pathToSettings, "..");
         var miconAbsPath = settings.manualIcon;
         var miconSettingsPath = (
                 isVoid(settingsDir) || isVoid(settings.manualIcon) ?
@@ -463,12 +464,11 @@ var setupWebcontent = function(settings, splash) {
         // hook urls to default browser
         var handleRedirect = (e, url) => {
                 if (url !== bw.webContents.getURL()) {
-                    e.preventDefault()
-                    electron.shell.openExternal(url)
-                }
+                    e.preventDefault();
+                    electron.shell.openExternal(url);
+                };
             }
-            //bw.webContents.on("will-navigate", handleRedirect)
-        bw.webContents.on("new-window", handleRedirect)
+        bw.webContents.on("new-window", handleRedirect);
     });
 };
 
@@ -628,8 +628,8 @@ var storeSettings = function(settings) {
 
 var startApplication = function(argv) {
 
-    var settings = undefined;
-    var splash = undefined;
+    var settings;
+    var splash;
     var chain = Promise.resolve();
 
     chain.then(function() {
