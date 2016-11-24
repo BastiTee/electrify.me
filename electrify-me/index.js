@@ -7,7 +7,7 @@ const https = require("https");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const childProcess = require("childProcess");
+const childProcess = require("child_process");
 
 // External dependencies
 const $ = require("cheerio");
@@ -348,7 +348,8 @@ var getFavicon = function(settings) {
         var foundPng = false;
 
         var promises = [];
-        for (var i in settings.faviconUrl) {
+        for (var i = 0; i < settings.faviconUrl.length; i++) {
+
             var favUrl = settings.faviconUrl[i];
             var filename = __udataDirname + "/" + settings.uriKey + "/" + favUrl.replace(/.*\/([^/]*)/, "\$1");
 
@@ -379,7 +380,7 @@ var convertFaviconToPng = function(settings) {
         }
 
         var promises = [];
-        for (var i in settings.favicoIn) {
+        for (var i = 0; i < settings.favicoIn.length; i++) {
             var fav = settings.favicoIn[i];
             if (ico(fav)) {
                 promises.push(convertIcon(settings, fav));
@@ -431,11 +432,12 @@ var setupWebcontent = function(settings, splash) {
         }
 
         // if manual icon is set, try to set it ..
-        var settingsDir = settings.pathToSettings == undefined ? undefined :
+        var settingsDir = settings.pathToSettings === undefined ? undefined :
             path.resolve(settings.pathToSettings, "..");
         var miconAbsPath = settings.manualIcon;
         var miconSettingsPath = (
-                settingsDir == undefined || settings.manualIcon == undefined) ?
+                settingsDir === undefined ||
+                settings.manualIcon === undefined) ?
             settings.manualIcon : path.join(settingsDir, settings.manualIcon);
 
         if (miconAbsPath !== undefined && fileExists(miconAbsPath)) {
@@ -481,7 +483,7 @@ var setupWebcontent = function(settings, splash) {
         });
         // hook urls to default browser
         var handleRedirect = (e, url) => {
-                if (url != bw.webContents.getURL()) {
+                if (url !== bw.webContents.getURL()) {
                     e.preventDefault()
                     electron.shell.openExternal(url)
                 }
@@ -498,14 +500,14 @@ var injectCss = function(settings, bw) {
         if (settings.hideScrollbars === true)
             bw.webContents.insertCSS("body { overflow:hidden !important; }");
 
-        if (settings.cssFile == undefined) {
+        if (settings.cssFile === undefined) {
             resolve(bw);
             return;
         }
 
         var cssFile = settings.cssFile;
         if (!fileExists(cssFile)) {
-            if (settings.pathToSettings == undefined) {
+            if (settings.pathToSettings === undefined) {
                 resolve(bw);
                 return;
             }
@@ -596,7 +598,7 @@ var createDesktopLinks = function(settings) {
                 stream.write("OnlyShowIn=Unity;\n");
                 stream.write("X-UnityGenerated=true\n");
                 stream.end();
-                fs.chmodSync(targetFile, 0755);
+                fs.chmodSync(targetFile, 755);
                 resolve(settings);
             });
 
@@ -624,10 +626,10 @@ var storeSettings = function(settings) {
         delete settings.favicoOut;
         delete settings.workingDir;
         delete settings.settingsFile;
-        if (settings.cssFile == undefined) {
+        if (settings.cssFile === undefined) {
             settings.cssFile = null;
         }
-        if (settings.manualIcon == undefined) {
+        if (settings.manualIcon === undefined) {
             settings.manualIcon = null;
         }
 
@@ -701,7 +703,7 @@ var startApplication = function(argv) {
 // CORE EVENTS //////////////////////////////////////////////////////////////////
 
 app.on("window-all-closed", function() {
-    if (process.platform != "darwin") {
+    if (process.platform !== "darwin") {
         app.quit();
     }
 });
