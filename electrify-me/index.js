@@ -466,7 +466,7 @@ var setupWebcontent = function(settings, splash) {
                 if (url !== bw.webContents.getURL()) {
                     e.preventDefault();
                     electron.shell.openExternal(url);
-                };
+                }
             };
         bw.webContents.on("new-window", handleRedirect);
     });
