@@ -102,6 +102,20 @@ var cleanArray = function(actual) {
 //////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////////////////////
 
+var readSettingsFromFile = function(argv) {
+    if (argv.r === undefined)
+        return false;
+    if (argv.r === "" || argv.r === true || argv.r === false)
+        help("Read-settings option used, but no filepath provided.");
+    try {
+        settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
+    } catch (err) {
+        help(err.message);
+    }
+    settings.pathToSettings = argv.r;
+    return true;
+}
+
 var readCmdLine = function(argv) {
 
     // TODO Reduce complexity!
@@ -114,22 +128,10 @@ var readCmdLine = function(argv) {
             help();
 
         // try to read and evaluate settings file..
-        var readSettingsFromFile = false;
-        if (argv.r !== undefined) {
-            if (argv.r === "" || argv.r === true || argv.r === false) {
-                help("Read-settings option used, but no filepath provided.");
-            }
-            try {
-                settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
-            } catch (err) {
-                help(err.message);
-            }
-            readSettingsFromFile = true;
-            settings.pathToSettings = argv.r;
-        }
+        var settingsRead = readSettingsFromFile(argv);
 
         // URL basic validation
-        if (!readSettingsFromFile)
+        if (!settingsRead)
             settings.url = String(argv._);
         if (settings.url === undefined || settings.url === "")
             help("No URL provided.");
@@ -142,7 +144,7 @@ var readCmdLine = function(argv) {
         settings.favicoIn = settings.workingDir + ".ico";
         settings.favicoOut = settings.workingDir + ".png";
 
-        if (readSettingsFromFile) {
+        if (settingsRead) {
             // dont parse cmd line in this case
             resolve(settings);
             return;
