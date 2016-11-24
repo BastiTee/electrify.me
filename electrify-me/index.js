@@ -100,16 +100,20 @@ var cleanArray = function(actual) {
     return newArray;
 };
 
+var isVoid = function(object) {
+    return typeof object === "undefined" || object === null || object == "";
+};
+
 //////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////////////////////
 
-var readSettingsFromFile = function(argv) {
-    if (argv.r === undefined || argv.r === "" )
-        help("Read-settings option used, but no filepath provided.");
+var readSettingsFromFile = function(argv, settings) {
+    if (isVoid(argv.r))
+        return;
     try {
         settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
     } catch (err) {
-        help(err.message);
+        help("Error loading properties. " + err.message);
     }
     settings.pathToSettings = argv.r;
     return true;
@@ -117,13 +121,11 @@ var readSettingsFromFile = function(argv) {
 
 var readCmdLine = function(argv) {
     return new Promise(function(resolve, reject) { // TODO To complex!
-        var settings = {};
-
-        if (argv.h !== undefined || argv.help !== undefined)
+        if (!isVoid(argv.help) || !isVoid(argv.help))
             help();
-
         // try to read and evaluate settings file..
-        var settingsRead = readSettingsFromFile(argv);
+        var settings = {};
+        var settingsRead = readSettingsFromFile(argv, settings);
 
         // URL basic validation
         if (!settingsRead)
