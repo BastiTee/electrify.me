@@ -311,7 +311,7 @@ var convertIcon = function(settings, icoFile) {
 };
 
 var getFavicon = function(settings) {
-    return new Promise(function(resolve, reject) { // TODO Too complex!
+    return new Promise(function(resolve, reject) {
         // skip on existing png icon file
         if (fileExists(settings.favicoOut)) {
             resolve();
@@ -401,7 +401,7 @@ var selectBestFavicon = function(settings) {
 };
 
 var setupWebcontent = function(settings, splash) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve, reject) { // TODO Too complex!
 
         // if no favicon was found, set it to default
         if (!fileExists(settings.favicoOut)) {
