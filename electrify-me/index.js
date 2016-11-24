@@ -2,12 +2,10 @@
 
 // Node-internal dependencies
 const url = require("url");
-const http = require("http");
-const https = require("https");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const childProcess = require("child_process");
+const cp = require("child_process");
 
 // External dependencies
 const $ = require("cheerio");
@@ -22,119 +20,35 @@ const app = electron.app;
 const ipc = electron.ipcMain;
 const tray = electron.Tray;
 
+// External files
+const helper = require("./helper.js");
+
 // Constants
 const __parentDirname = path.resolve(__dirname, "..");
 const __udataDirname = path.join(__parentDirname, "_electrified");
 
 //////////////////////////////////////////////////////////////////
-// HELPER FUNCTIONS
-//////////////////////////////////////////////////////////////////
-
-var isVoid = function(object) {
-    return typeof object === "undefined" || object === null || object === "";
-};
-
-var help = function(message) {
-    if (!isVoid(message))
-        console.log(message);
-    console.log("Usage:   <electrify> [URL] ([OPTS])");
-    console.log("");
-    console.log("Options: ");
-    console.log("    -c <FILE>   CSS to be injected into website.");
-    console.log("    -m          Window maximized.");
-    console.log("    -d          Run in development mode.");
-    console.log("    -r <FILE>   Read settings from local file " +
-        "(all other options are ignored).");
-    console.log("    -h          Print this help.");
-    console.log("");
-    console.log("Example: <electrify> https://web.whatsapp.com " +
-        "-c inject.css -d");
-
-    // display of help always terminates the application.
-    process.exit(0);
-};
-
-var logError = function(message, exception) {
-    if (!isVoid(message))
-        console.log("[ERROR] " + message);
-    if (!isVoid(exception))
-        console.log("        Exception was: " + exception);
-};
-
-var fileExists = function(filename) {
-    try {
-        fs.accessSync(filename, fs.F_OK | fs.R_OK);
-        var stat = fs.statSync(filename);
-        if (stat["size"] === 0)
-            return false;
-        return true;
-    } catch (err) {
-        return false;
-    }
-};
-
-var mkdirSilent = function(directory) {
-    try {
-        fs.mkdirSync(directory);
-    } catch (ex) {
-        if (ex.code !== "EEXIST")
-            help(ex.message);
-    }
-};
-
-var png = function(filename) {
-    return (filename.toLowerCase().indexOf(".png") >= 0 &&
-        filename.toLowerCase().indexOf("fluidicon") <= 0);
-};
-
-var ico = function(filename) {
-    return filename.toLowerCase().indexOf(".ico") >= 0;
-};
-
-var cleanArray = function(actual) {
-    var newArray = new Array();
-    for (var i = 0; i < actual.length; i++) {
-        if (actual[i])
-            newArray.push(actual[i]);
-    }
-    return newArray;
-};
-
-//////////////////////////////////////////////////////////////////
 // CORE INVOKATION FUNCTIONS //////////////////////////////////////////////////////////////////
-
-var readSettingsFromFile = function(argv) {
-    var settings = {};
-    if (isVoid(argv.r))
-        return "";
-    try {
-        settings = JSON.parse(fs.readFileSync(argv.r, "utf-8"));
-    } catch (err) {
-        help("Error loading properties. " + err.message);
-    }
-    settings.pathToSettings = argv.r;
-    return settings;
-};
 
 var readCmdLine = function(argv) {
     return new Promise(function(resolve, reject) { // TODO Too complex!
-        if (!isVoid(argv.help) || !isVoid(argv.help)) {
-            help();
+        if (!helper.isVoid(argv.help) || !helper.isVoid(argv.help)) {
+            helper.help();
         }
+
         // try to read and evaluate settings file..
-        var settings = readSettingsFromFile(argv);
-        var readFromFile = !isVoid(settings);
+        var settings = helper.(argv.r);
+        var readFromFile = !helper.isVoid(settings);
         // URL basic validation
         if (!readFromFile) {
             settings = {};
             settings.url = String(argv._);
         }
-        if (isVoid(settings.url)) {
-            help("No URL provided.");
+        if (helper.isVoid(settings.url)) {
+            helper.help("No URL provided.");
         }
 
         // set some internal settings
-        settings.httpClient = vurl.isHttpUri(settings.url) ? "http" : "https";
         settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
         settings.workingDir = __udataDirname + "/" + settings.uriKey;
         settings.favicoIn = settings.workingDir + ".ico";
@@ -148,8 +62,8 @@ var readCmdLine = function(argv) {
 
         // apply default settings
         settings.cssFile = argv.c;
-        settings.devMode = !isVoid(argv.d);
-        settings.maximized = !isVoid(argv.m);
+        settings.devMode = !helper.isVoid(argv.d);
+        settings.maximized = !helper.isVoid(argv.m);
         settings.hideScrollbars = false;
         settings.windowSettings = {
             fullscreen: false,
@@ -158,9 +72,9 @@ var readCmdLine = function(argv) {
             movable: true,
             frame: true,
         };
+        helper.mkdirSilent(__udataDirname);
+        helper.mkdirSilent(settings.workingDir);
 
-        mkdirSilent(__udataDirname);
-        mkdirSilent(settings.workingDir);
 
         resolve(settings);
     });
@@ -203,15 +117,15 @@ var resolveToFullyQualifiedUrl = function(settings) {
             timeout: 5000
         }, function(error, response, body) { // TODO Too complex!
             if (error || response.statusCode !== 200)
-                help("Could not resolve unqualified URI " + urlBefore);
+                helper.help("Could not resolve unqualified URI " + urlBefore);
             var json = JSON.parse(body);
             try {
                 settings.url = json.Results[0].FirstURL;
                 if (!vurl.isWebUri(settings.url))
-                    help("Could not resolve unqualified URI " + urlBefore);
+                    helper.help("Could not resolve unqualified URI " + urlBefore);
                 resolve(settings);
             } catch (err) {
-                help("Could not resolve unqualified URI " + urlBefore);
+                helper.help("Could not resolve unqualified URI " + urlBefore);
             }
         });
     });
@@ -221,7 +135,7 @@ var getFaviconUrl = function(settings) {
     return new Promise(function(resolve, reject) {
 
         // skip on existing png icon file
-        if (fileExists(settings.favicoOut)) {
+        if (helper.fileExists(settings.favicoOut)) {
             settings.faviconUrl = settings.favicoOut;
             resolve(settings);
             return;
@@ -235,14 +149,14 @@ var getFaviconUrl = function(settings) {
             timeout: 5000
         }, function(error, response, body) {
             if (error || response.statusCode !== 200)
-                help("Could not get favicon." + rootWebpath);
+                helper.help("Could not get favicon." + rootWebpath);
             var candidates = [];
             var pageContent = $.load(body);
             var links = pageContent("link");
 
             $(links).each(function() {
                 var href = $(this).attr("href");
-                if (ico(href) || png(href)) {
+                if (helper.isIco(href) || helper.isPng(href)) {
                     var relpath = vurl.isUri(href) ?
                         href : rootWebpath + "/" + href.replace(/^\//, "");
                     candidates.push(relpath);
@@ -258,7 +172,7 @@ var getFaviconUrl = function(settings) {
 var downloadFile = function(from, to) {
     return new Promise(function(resolve, reject) {
 
-        if (fileExists(to)) {
+        if (helper.fileExists(to)) {
             resolve(to);
             return;
         }
@@ -268,7 +182,7 @@ var downloadFile = function(from, to) {
             timeout: 5000
         }, function(error) {
             if (error) {
-                logError(error);
+                console.log(error);
                 fs.unlinkSync(to);
                 resolve();
                 return;
@@ -289,17 +203,15 @@ var convertIcon = function(settings, icoFile) {
         if (os.platform() === "win32") {
             convert = __dirname + "/ext/imagemagick-windows/convert.exe";
         } else {
-            logError("No built-in resize backend for this platform " +
+            console.log("No built-in resize backend for this platform " +
                 "present. Will try to use default.");
         }
 
         var opts = [icoFile, icoFile + ".png"];
 
-        console.log("opts: " + opts + " << " + settings.faviconIn);
-
-        childProcess.execFile(convert, opts, function(err, stdout, stderr) {
+        cp.execFile(convert, opts, function(err, stdout, stderr) {
             if (err) {
-                logError("Could not generate pgn. Will skip this step. " +
+                console.log("Could not generate pgn. Will skip this step. " +
                     err.message);
                 // remove input file to allow retries
                 //fs.unlinkSync(icoFile);
@@ -313,11 +225,11 @@ var convertIcon = function(settings, icoFile) {
 var getFavicon = function(settings) {
     return new Promise(function(resolve, reject) {
         // skip on existing png icon file
-        if (fileExists(settings.favicoOut)) {
+        if (helper.fileExists(settings.favicoOut)) {
             resolve();
             return;
         }
-        if (isVoid(settings.faviconUrl)) {
+        if (helper.isVoid(settings.faviconUrl)) {
             // return when previous step did not find a favicon
             delete settings.favicoIn;
             resolve();
@@ -332,17 +244,17 @@ var getFavicon = function(settings) {
             var favUrl = settings.faviconUrl[i];
             var filename = __udataDirname + "/" + settings.uriKey + "/" + favUrl.replace(/.*\/([^/]*)/, "\$1");
 
-            if (png(favUrl))
+            if (helper.isPng(favUrl))
                 foundPng = true;
             // skip icos when a png was found
-            if (foundPng && ico(favUrl))
+            if (foundPng && helper.isIco(favUrl))
                 continue;
             promises.push(downloadFile(favUrl, filename));
         }
 
         var dlChain = Promise.resolve();
         Promise.all(promises).then((values) => {
-            values = cleanArray(values);
+            values = helper.cleanArray(values);
             settings.favicoIn = values;
             resolve(settings);
         });
@@ -352,8 +264,9 @@ var getFavicon = function(settings) {
 var convertFaviconToPng = function(settings) {
     return new Promise(function(resolve, reject) {
 
+
         // skip on existing png icon file
-        if (fileExists(settings.favicoOut)) {
+        if (helper.fileExists(settings.favicoOut)) {
             resolve();
             return;
         }
@@ -361,13 +274,12 @@ var convertFaviconToPng = function(settings) {
         var promises = [];
         for (var i = 0; i < settings.favicoIn.length; i++) {
             var fav = settings.favicoIn[i];
-            if (ico(fav)) {
+            if (helper.isIco(fav)) {
                 promises.push(convertIcon(settings, fav));
             }
         }
         var dlChain = Promise.resolve();
         Promise.all(promises).then((values) => {
-            console.log(values);
             resolve(settings);
         });
     });
@@ -393,7 +305,7 @@ var selectBestFavicon = function(settings) {
             next();
         });
         walker.on("end", function() {
-            if (!isVoid(selectedFile))
+            if (!helper.isVoid(selectedFile))
                 settings.favicoOut = path.join(settings.workingDir, selectedFile);
             resolve(settings);
         });
@@ -404,27 +316,27 @@ var setupWebcontent = function(settings, splash) {
     return new Promise(function(resolve, reject) { // TODO Too complex!
 
         // if no favicon was found, set it to default
-        if (!fileExists(settings.favicoOut)) {
-            logError("Favicon PNG does not exist. Will use default icon.");
+        if (!helper.fileExists(settings.favicoOut)) {
+            console.log("Favicon PNG does not exist. Will use default icon.");
             settings.favicoIn = path.join(__dirname, "favicon-default.ico");
             settings.favicoOut = path.join(__dirname, "favicon-default.png");
         }
 
         // if manual icon is set, try to set it ..
         var settingsDir;
-        if (!isVoid(settings.pathToSettings))
+        if (!helper.isVoid(settings.pathToSettings))
             path.resolve(settings.pathToSettings, "..");
         var miconAbsPath = settings.manualIcon;
         var miconSettingsPath = (
-                isVoid(settingsDir) || isVoid(settings.manualIcon) ?
+                helper.isVoid(settingsDir) || helper.isVoid(settings.manualIcon) ?
             settings.manualIcon : path.join(settingsDir, settings.manualIcon));
 
-        if (!isVoid(miconAbsPath) && fileExists(miconAbsPath)) {
+        if (!helper.isVoid(miconAbsPath) && helper.fileExists(miconAbsPath)) {
             console.log("Manual icon path resolved. Will set icon to: " +
                 miconAbsPath);
             settings.favicoOut = miconAbsPath;
-        } else if (!isVoid(miconSettingsPath) &&
-            fileExists(miconSettingsPath)) {
+        } else if (!helper.isVoid(miconSettingsPath) &&
+            helper.fileExists(miconSettingsPath)) {
             console.log("Manual icon path resolved. Will set icon to: " +
                 miconSettingsPath);
             settings.favicoOut = miconSettingsPath;
@@ -446,7 +358,7 @@ var setupWebcontent = function(settings, splash) {
             bw = null;
         });
         bw.webContents.on("did-finish-load", function() {
-            if (!isVoid(splash))
+            if (!helper.isVoid(splash))
                 splash.destroy();
             if (settings.maximized)
                 bw.maximize();
@@ -454,9 +366,9 @@ var setupWebcontent = function(settings, splash) {
         });
         bw.webContents.on("did-fail-load", function(errorCode,
             errorDescription, validatedURL) {
-            if (!isVoid(splash))
+            if (!helper.isVoid(splash))
                 splash.destroy();
-            help("Electrifying failed unrecoverable." + errorCode);
+            helper.help("Electrifying failed unrecoverable." + errorCode);
         });
         // hook urls to default browser
         var handleRedirect = (e, url) => {
@@ -475,14 +387,14 @@ var injectCss = function(settings, bw) {
         if (settings.hideScrollbars === true)
             bw.webContents.insertCSS("body { overflow:hidden !important; }");
 
-        if (isVoid(settings.cssFile)) {
+        if (helper.isVoid(settings.cssFile)) {
             resolve(bw);
             return;
         }
 
         var cssFile = settings.cssFile;
-        if (!fileExists(cssFile)) {
-            if (isVoid(settings.pathToSettings)) {
+        if (!helper.fileExists(cssFile)) {
+            if (helper.isVoid(settings.pathToSettings)) {
                 resolve(bw);
                 return;
             }
@@ -490,7 +402,7 @@ var injectCss = function(settings, bw) {
             console.log("CSS file " + cssFile + " does not exist. Will " +
                 "try to find it next to settings file in: " + settingsDir);
             cssFile = path.join(settingsDir, settings.cssFile);
-            if (!fileExists(cssFile)) {
+            if (!helper.fileExists(cssFile)) {
                 console.log("Nope. Not there either.");
                 resolve(bw);
                 return;
@@ -499,7 +411,8 @@ var injectCss = function(settings, bw) {
 
         fs.readFile(cssFile, "utf8", function(err, data) {
             if (err) {
-                logError("Could not read provided CSS file. Ignoring.", err);
+                console.log(
+                    "Could not read provided CSS file. Ignoring. " + err);
                 resolve(bw);
                 return;
             }
@@ -538,10 +451,10 @@ var createDesktopLinks = function(settings) {
                 settings.favicoOut
             ];
 
-            childProcess.execFile(symlink, opts,
+            cp.execFile(symlink, opts,
                 function(err, stdout, stderr) {
                     if (err)
-                        logError("Could not generate symlink. ", err);
+                        console.log("Could not generate symlink. " + err);
                     resolve(settings);
                 });
 
@@ -578,7 +491,8 @@ var createDesktopLinks = function(settings) {
             });
 
         } else {
-            logError("No built-in symlink backend for this platform present.");
+            console.log(
+                "No built-in symlink backend for this platform present.");
             resolve(settings);
         }
     });
@@ -593,7 +507,6 @@ var storeSettings = function(settings) {
         delete settings.windowSettings.icon;
         delete settings.windowSettings.webPreferences;
         delete settings.windowSettings.show;
-        delete settings.httpClient;
         delete settings.pathToSettings;
         delete settings.uriKey;
         delete settings.favicoIn;
@@ -601,16 +514,16 @@ var storeSettings = function(settings) {
         delete settings.favicoOut;
         delete settings.workingDir;
         delete settings.settingsFile;
-        if (isVoid(settings.cssFile))
+        if (helper.isVoid(settings.cssFile))
             settings.cssFile = null;
-        if (isVoid(settings.manualIcon))
+        if (helper.isVoid(settings.manualIcon))
             settings.manualIcon = null;
 
         fs.writeFile(sFile,
             JSON.stringify(settings, null, 2), "utf-8",
             function(err) {
                 if (err)
-                    logError(err);
+                    console.log(err);
             }
         );
 
