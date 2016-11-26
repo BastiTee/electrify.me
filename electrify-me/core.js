@@ -93,8 +93,7 @@ var core = (function() {
 
     var printHelpMenu = function(argv) {
         if (!helper.isVoid(argv.h) ||
-            !helper.isVoid(argv.help) ||
-            !helper.isVoid(argv.?)) {
+            !helper.isVoid(argv.help)) {
             helper.help();
         }
     };
