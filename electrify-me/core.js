@@ -117,8 +117,8 @@ var core = (function() {
             // set some internal settings
             settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
             settings.workingDir = __udataDirname + "/" + settings.uriKey;
-            settings.favicoIn = settings.workingDir + ".ico";
-            settings.favicoOut = settings.workingDir + ".png";
+            settings.faviconIn = settings.workingDir + ".ico";
+            settings.faviconOut = settings.workingDir + ".png";
 
             if (readFromFile) {
                 // dont parse cmd line in this case
@@ -176,9 +176,6 @@ var core = (function() {
                 var json = JSON.parse(body);
                 try {
                     settings.url = json.Results[0].FirstURL;
-                    if (!vurl.isWebUri(settings.url))
-                        helper.help(
-                            "Could not resolve unqualified URI " + urlBefore);
                     resolve(settings);
                 } catch (err) {
                     helper.help(
@@ -192,8 +189,8 @@ var core = (function() {
         return new Promise(function(resolve, reject) {
 
             // skip on existing png icon file
-            if (helper.fileExists(settings.favicoOut)) {
-                settings.faviconUrl = settings.favicoOut;
+            if (helper.fileExists(settings.faviconOut)) {
+                settings.faviconUrl = settings.faviconOut;
                 resolve(settings);
                 return;
             }
@@ -230,13 +227,13 @@ var core = (function() {
     exports.getFavicon = function(settings) {
         return new Promise(function(resolve, reject) {
             // skip on existing png icon file
-            if (helper.fileExists(settings.favicoOut)) {
+            if (helper.fileExists(settings.faviconOut)) {
                 resolve();
                 return;
             }
             if (helper.isVoid(settings.faviconUrl)) {
                 // return when previous step did not find a favicon
-                delete settings.favicoIn;
+                delete settings.faviconIn;
                 resolve();
                 return;
             }
@@ -261,7 +258,7 @@ var core = (function() {
             var dlChain = Promise.resolve();
             Promise.all(promises).then((values) => {
                 values = helper.cleanArray(values);
-                settings.favicoIn = values;
+                settings.faviconIn = values;
                 resolve(settings);
             });
         });
@@ -271,14 +268,14 @@ var core = (function() {
         return new Promise(function(resolve, reject) {
 
             // skip on existing png icon file
-            if (helper.fileExists(settings.favicoOut)) {
+            if (helper.fileExists(settings.faviconOut)) {
                 resolve();
                 return;
             }
 
             var promises = [];
-            for (var i = 0; i < settings.favicoIn.length; i++) {
-                var fav = settings.favicoIn[i];
+            for (var i = 0; i < settings.faviconIn.length; i++) {
+                var fav = settings.faviconIn[i];
                 if (helper.isIco(fav)) {
                     promises.push(convertIcon(settings, fav));
                 }
@@ -311,7 +308,7 @@ var core = (function() {
             });
             walker.on("end", function() {
                 if (!helper.isVoid(selectedFile))
-                    settings.favicoOut = path.join(
+                    settings.faviconOut = path.join(
                         settings.workingDir, selectedFile);
                 resolve(settings);
             });
@@ -322,12 +319,12 @@ var core = (function() {
         return new Promise(function(resolve, reject) {
 
             // if no favicon was found, set it to default
-            if (!helper.fileExists(settings.favicoOut)) {
+            if (!helper.fileExists(settings.faviconOut)) {
                 console.log(
                     "Favicon PNG does not exist. Will use default icon.");
-                settings.favicoIn = path.join(
+                settings.faviconIn = path.join(
                     __dirname, "favicon-default.ico");
-                settings.favicoOut = path.join(
+                settings.faviconOut = path.join(
                     __dirname, "favicon-default.png");
             }
 
@@ -346,15 +343,15 @@ var core = (function() {
                 console.log(
                     "Manual icon path resolved. Will set icon to: " +
                     miconAbsPath);
-                settings.favicoOut = miconAbsPath;
+                settings.faviconOut = miconAbsPath;
             } else if (!helper.isVoid(miconSettingsPath) &&
                 helper.fileExists(miconSettingsPath)) {
                 console.log("Manual icon path resolved. Will set icon to: " +
                     miconSettingsPath);
-                settings.favicoOut = miconSettingsPath;
+                settings.faviconOut = miconSettingsPath;
             }
 
-            settings.windowSettings.icon = settings.favicoOut;
+            settings.windowSettings.icon = settings.faviconOut;
             settings.windowSettings.show = false;
             settings.windowSettings.webPreferences = {
                 nodeIntegration: false
@@ -463,7 +460,7 @@ var core = (function() {
                     "-description",
                     "Electrify " + urlObj.hostname,
                     "-iconlocation",
-                    settings.favicoOut
+                    settings.faviconOut
                 ];
 
                 cp.execFile(symlink, opts,
@@ -482,7 +479,7 @@ var core = (function() {
                     resolve(settings);
                     return;
                 }
-                var iconPathAbs = settings.favicoOut;
+                var iconPathAbs = settings.faviconOut;
                 var command = path.join(__parentDirname,
                         "node_modules", "electron", "dist",
                         "electron") +
@@ -534,9 +531,9 @@ var core = (function() {
             delete settings.windowSettings.show;
             delete settings.pathToSettings;
             delete settings.uriKey;
-            delete settings.favicoIn;
+            delete settings.faviconIn;
             delete settings.faviconUrl;
-            delete settings.favicoOut;
+            delete settings.faviconOut;
             delete settings.workingDir;
             delete settings.settingsFile;
             if (helper.isVoid(settings.cssFile))

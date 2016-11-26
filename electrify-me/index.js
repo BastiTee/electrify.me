@@ -33,13 +33,13 @@ app.on("ready", function() {
         console.log("Received favicon url: " + settings.faviconUrl);
         return core.getFavicon(settings);
     }).then(function() {
-        console.log("Downloaded favicon: " + settings.favicoIn);
+        console.log("Downloaded favicon: " + settings.faviconIn);
         return core.convertFaviconToPng(settings);
     }).then(function() {
-        console.log("Converted favicon: " + settings.favicoOut);
+        console.log("Converted favicon: " + settings.faviconOut);
         return core.selectBestFavicon(settings);
     }).then(function() {
-        console.log("Selected best favicon: " + settings.favicoOut);
+        console.log("Selected best favicon: " + settings.faviconOut);
         return core.setupWebcontent(settings, splash);
     }).then(function(browserWindow) {
         console.log("Finished application pre-processing.");
