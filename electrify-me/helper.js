@@ -50,11 +50,15 @@ var helper = (function() {
     };
 
     exports.isPng = function(filename) {
+        if (this.isVoid(filename))
+            return false;
         return (filename.toLowerCase().indexOf(".png") >= 0 &&
             filename.toLowerCase().indexOf("fluidicon") <= 0);
     };
 
     exports.isIco = function(filename) {
+        if (this.isVoid(filename))
+            return false;
         return filename.toLowerCase().indexOf(".ico") >= 0;
     };
 

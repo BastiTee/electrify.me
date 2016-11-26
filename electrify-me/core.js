@@ -76,9 +76,24 @@ var core = (function() {
         });
     };
 
+    var appendDefaultSettings = function(settings, argv) {
+        settings.cssFile = argv.c;
+        settings.devMode = !helper.isVoid(argv.d);
+        settings.maximized = !helper.isVoid(argv.m);
+        settings.hideScrollbars = false;
+        settings.windowSettings = {
+            fullscreen: false,
+            fullscreenable: true,
+            resizable: true,
+            movable: true,
+            frame: true,
+        };
+        return settings;
+    }
+
     exports.readCmdLine = function(argv) {
         return new Promise(function(resolve, reject) {
-            if (!helper.isVoid(argv.help) || !helper.isVoid(argv.help)) {
+            if (!helper.isVoid(argv.h) || !helper.isVoid(argv.help)) {
                 helper.help();
             }
 
@@ -106,18 +121,7 @@ var core = (function() {
                 return;
             }
 
-            // apply default settings
-            settings.cssFile = argv.c;
-            settings.devMode = !helper.isVoid(argv.d);
-            settings.maximized = !helper.isVoid(argv.m);
-            settings.hideScrollbars = false;
-            settings.windowSettings = {
-                fullscreen: false,
-                fullscreenable: true,
-                resizable: true,
-                movable: true,
-                frame: true,
-            };
+            settings = appendDefaultSettings(settings, argv);
             helper.mkdirSilent(__udataDirname);
             helper.mkdirSilent(settings.workingDir);
 
@@ -332,7 +336,6 @@ var core = (function() {
                 helper.isVoid(settings.manualIcon) ?
                 settings.manualIcon : path.join(settingsDir,
                     settings.manualIcon));
-            console.log(">> " + miconAbsPath);
             if (!helper.isVoid(miconAbsPath) &&
                 helper.fileExists(miconAbsPath)) {
                 console.log(
@@ -368,11 +371,13 @@ var core = (function() {
                     bw.maximize();
                 resolve(bw);
             });
-            bw.webContents.on("did-fail-load", function(errorCode,
+            bw.webContents.on("did-fail-load", function(event, errorCode,
                 errorDescription, validatedURL) {
                 if (!helper.isVoid(splash))
                     splash.destroy();
-                helper.help("Electrifying failed unrecoverable." + errorCode);
+                if (errorCode !== -3)
+                    helper.help(
+                        "Electrifying failed unrecoverable. " + errorCode);
             });
             // hook urls to default browser
             var handleRedirect = (e, url) => {
