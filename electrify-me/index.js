@@ -17,8 +17,7 @@ app.on("ready", function() {
     Promise.resolve().then(function() {
         console.log("Electrify initialization started.");
         return core.readCmdLine(argv);
-    }).then(function(data) {
-        settings = data;
+    }).then(function(settings) {
         console.log("Read command line.");
         return core.openSplash();
     }).then(function(data) {
