@@ -89,13 +89,19 @@ var core = (function() {
             frame: true,
         };
         return settings;
-    }
+    };
+
+    var printHelpMenu = function(argv) {
+        if (!helper.isVoid(argv.h) ||
+            !helper.isVoid(argv.help) ||
+            !helper.isVoid(argv.?)) {
+            helper.help();
+        }
+    };
 
     exports.readCmdLine = function(argv) {
         return new Promise(function(resolve, reject) {
-            if (!helper.isVoid(argv.h) || !helper.isVoid(argv.help)) {
-                helper.help();
-            }
+            printHelpMenu(argv);
 
             // try to read and evaluate settings file..
             var settings = helper.readSettingsFromFile(argv.r);
