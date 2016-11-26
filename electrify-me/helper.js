@@ -3,13 +3,17 @@ var helper = (function() {
     const fs = require("fs");
 
     exports.isVoid = function(object) {
-        return typeof object === "undefined" || object === null || object === "";
+        return (
+            typeof object === "undefined" ||
+            object === null ||
+            object === ""
+        );
     };
 
     exports.help = function(message) {
         if (!this.isVoid(message))
             console.log(message);
-        console.log("Usage:   <electrify> [URL] ([OPTS])");
+        console.log("Usage: <electrify> [URL] ([OPTS])");
         console.log("");
         console.log("Options: ");
         console.log("    -c <FILE>   CSS to be injected into website.");
@@ -21,8 +25,6 @@ var helper = (function() {
         console.log("");
         console.log("Example: <electrify> https://web.whatsapp.com " +
             "-c inject.css -d");
-
-        // display of help always terminates the application.
         process.exit(0);
     };
 

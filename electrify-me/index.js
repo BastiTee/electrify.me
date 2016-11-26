@@ -1,7 +1,7 @@
 "use-strict";
+const core = require("./core.js");
 const app = require("electron").app;
 const minimist = require("minimist");
-const core = require("./core.js");
 
 app.on("window-all-closed", function() {
     if (process.platform !== "darwin") {
@@ -13,9 +13,8 @@ app.on("ready", function() {
     var argv = minimist(process.argv.slice(2));
     var settings;
     var splash;
-    var chain = Promise.resolve();
 
-    chain.then(function() {
+    Promise.resolve().then(function() {
         console.log("Electrify initialization started.");
         return core.readCmdLine(argv);
     }).then(function(data) {
@@ -28,7 +27,7 @@ app.on("ready", function() {
         return core.resolveToFullyQualifiedUrl(settings);
     }).then(function(data) {
         settings = data;
-        console.log("Resolved input URL: " + settings.url);
+        console.log("Resolved input url: " + settings.url);
         return core.getFaviconUrl(settings);
     }).then(function() {
         console.log("Received favicon url: " + settings.faviconUrl);
@@ -47,7 +46,7 @@ app.on("ready", function() {
         return core.injectCss(settings, browserWindow);
     }).then(function(browserWindow) {
         browserWindow.show();
-        console.log("Injected CSS.");
+        console.log("Injected css.");
         return core.createDesktopLinks(settings);
     }).then(function(settings) {
         console.log("Created desktop links.");

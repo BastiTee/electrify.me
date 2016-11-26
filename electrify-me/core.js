@@ -1,6 +1,6 @@
 var core = (function() {
 
-    // Node-internal dependencies
+    // Native node dependencies
     const url = require("url");
     const fs = require("fs");
     const os = require("os");
@@ -58,18 +58,17 @@ var core = (function() {
                 convert = __dirname + "/ext/imagemagick-windows/convert.exe";
             } else {
                 console.log("No built-in resize backend for this platform " +
-                    "present. Will try to use default.");
+                    "present. Will try to use 'convert' on path.");
             }
 
             var opts = [icoFile, icoFile + ".png"];
-
             cp.execFile(convert, opts, function(err, stdout, stderr) {
                 if (err) {
                     console.log(
                         "Could not generate pgn. Will skip this step. " +
                         err.message);
                     // remove input file to allow retries
-                    //fs.unlinkSync(icoFile);
+                    fs.unlinkSync(icoFile);
                     resolve();
                 }
                 resolve();
@@ -121,7 +120,6 @@ var core = (function() {
             };
             helper.mkdirSilent(__udataDirname);
             helper.mkdirSilent(settings.workingDir);
-
 
             resolve(settings);
         });
@@ -327,14 +325,14 @@ var core = (function() {
             // if manual icon is set, try to set it ..
             var settingsDir;
             if (!helper.isVoid(settings.pathToSettings))
-                path.resolve(settings.pathToSettings, "..");
+                settingsDir = path.resolve(settings.pathToSettings, "..");
             var miconAbsPath = settings.manualIcon;
             var miconSettingsPath = (
                 helper.isVoid(settingsDir) ||
                 helper.isVoid(settings.manualIcon) ?
                 settings.manualIcon : path.join(settingsDir,
                     settings.manualIcon));
-
+            console.log(">> " + miconAbsPath);
             if (!helper.isVoid(miconAbsPath) &&
                 helper.fileExists(miconAbsPath)) {
                 console.log(
@@ -467,6 +465,13 @@ var core = (function() {
 
             } else if (os.platform() === "linux") {
 
+                var targetFile = path.join(__udataDirname,
+                    settings.uriKey + ".desktop");
+                if (helper.fileExists(targetFile)) {
+                    console.log("Desktop launcher exists. Will skip.");
+                    resolve(settings);
+                    return;
+                }
                 var iconPathAbs = settings.favicoOut;
                 var command = path.join(__parentDirname,
                         "node_modules", "electron", "dist",
@@ -475,8 +480,6 @@ var core = (function() {
                     path.join(__parentDirname, "electrify-me") + " -r " +
                     settings.settingsFile;
 
-                var targetFile = path.join(__udataDirname,
-                    settings.uriKey + ".desktop");
                 var stream = fs.createWriteStream(targetFile);
                 stream.once("open", function(fd) {
                     stream.write("[Desktop Entry]\n");
@@ -494,7 +497,7 @@ var core = (function() {
                     stream.write("OnlyShowIn=Unity;\n");
                     stream.write("X-UnityGenerated=true\n");
                     stream.end();
-                    fs.chmodSync(targetFile, 755);
+                    fs.chmodSync(targetFile, "755");
                     resolve(settings);
                 });
 
@@ -510,7 +513,11 @@ var core = (function() {
         return new Promise(function(resolve, reject) {
 
             var sFile = settings.settingsFile;
-
+            if (helper.fileExists(sFile)) {
+                console.log("Local settings file exists. Will skip.");
+                resolve(settings);
+                return;
+            }
             // delete internal settings
             delete settings.windowSettings.icon;
             delete settings.windowSettings.webPreferences;
