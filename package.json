@@ -14,11 +14,11 @@
   },
   "license": "GPL-3.0",
   "dependencies": {
-    "cheerio": "^0.22.0",
-    "electron": "^1.4.5",
-    "minimist": "^1.2.0",
-    "request": "^2.78.0",
-    "valid-url": "^1.0.9",
-    "walk": "^2.3.9"
+    "cheerio": "0.22.0",
+    "electron": "1.4.5",
+    "minimist": "1.2.0",
+    "request": "2.78.0",
+    "valid-url": "1.0.9",
+    "walk": "2.3.9"
   }
 }
