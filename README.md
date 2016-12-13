@@ -14,40 +14,20 @@ You can customize the apperance of your electrified website by injecting CSS int
 
 ## Usage
 
-## Quick start from release 
-
-Get [release archive](https://github.com/BastiTee/electrify.me/releases/latest) for your system and run..
-
-**Windows**
+Download source archive and run..
 
 ```
-electrify.bat facebook.com
-```
-
-**Linux**
-
-```
-./electrify facebook.com
-```
-
-### Quick start from source 
-
-Download source archive and run.. 
-
-```
->> npm install
->> npm start -- facebook.com 
+./electrify https://web.whatsapp.com
 ```
 
 ### Startup process
 
-A subfolder `__electrified` will be created, containing the extracted and converted favicons and a reusable settings file (see below).
-In the root folder you should find a desktop link to restart your configured app and to add the link to your Start menu or quick start bar.
-
+A subfolder `_electrified` will be created, containing the extracted and converted favicons and a reusable settings file (see below).
+Furthermore you will find a desktop link to restart your configured app and to add the link to your start menu or launcher bar.
 
 ### Options
 
-For details on options etc. run `npm start -- -h` or `electrify.bat -h` (if windows) or `./electrify -h` (if linux).
+For details on options etc. run `./electrify -h`.
 
 ```
 Usage:   <electrify> [URL] ([OPTS])
@@ -69,8 +49,10 @@ The setting file that you can read/write via the command-line options will look 
 ```
 {
   "url": "https://web.whatsapp.com",
+  "cssFile": "my-css-injections.css",
   "devMode": false,
   "maximized": false,
+  "hideScrollbars": false,
   "windowSettings": {
     "fullscreen": false,
     "fullscreenable": true,
@@ -78,29 +60,29 @@ The setting file that you can read/write via the command-line options will look 
     "movable": true,
     "frame": true
   },
-  "faviconUrl": "https://web.whatsapp.com/favicon.ico"
+  "manualIcon": null
 }
 ```
 
 | Parameter | Purpose |
 |-------------|------------|
 | url | The URL you want to electrify |
+| cssFile | The css file to be injected. Can either be an absolute path or filename only, if the cssFile resides next to the settings file. |
 | devMode | If  true, opens the chromium devevelopment console on startup |
 | maximized | If true, opens the window maximized |
+| hideScrollbars | Tries to suppress window scrollbars |
 | windowSettings | Fine-grained [Electron window settings](http://electron.atom.io/docs/api/browser-window/#new-browserwindowoptions) (Attention: Parameters icon, show, and webPreferences will always be overwritten) |
-| faviconUrl | Auto-detected path to favicon of website |
+| manualIcon | Path to a manual icon to be set (in case electrify cannot determine a favicon) |
 
 ## Limitations and future work
 
-*electrify.me* is in its baby shoes. Pull requests and ideas are very welcomed.
+*electrify.me* is in its baby shoes. Pull requests and ideas are very welcome.
 
 ### Current To-Dos
 
 **Favicon extraction**
 
-Favicon extraction is still somewhat shaky. The reason is that icon files are not supported by 
-electron and that there is no non-native way to convert ico to png. Currently imagemagick/convert is used. 
-So further work would be:
+Favicon extraction is still somewhat shaky. The reason is that icon files are not supported by electron and that there is no non-native way to convert ico to png. Currently imagemagick/convert is used. So further work would include:
 
 - [ ] Add an imagemagick build for linux systems to support ico-2-png conversion for it.
 - [ ] Add an imagemagick build for mac systems to support ico-2-png conversion for it.
@@ -125,4 +107,3 @@ Icon made by [Freepik](http://www.flaticon.com/authors/freepik) from [www.flatic
 Code is licensed under GPLv3.
 
 This small tool is powered by the awesome [Electron framework](http://electron.atom.io/).
-

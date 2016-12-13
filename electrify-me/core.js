@@ -12,7 +12,7 @@ var core = (function() {
     const request = require("request");
     const vurl = require("valid-url");
     const walk = require("walk");
-
+    
     // Electron dependencies
     const electron = require("electron");
 
@@ -474,39 +474,48 @@ var core = (function() {
 
                 var targetFile = path.join(__udataDirname,
                     settings.uriKey + ".desktop");
+                var installTargetFile = path.join(os.homedir(),
+                    ".local", "share", "applications",
+                    settings.uriKey + ".desktop");
                 if (helper.fileExists(targetFile)) {
                     console.log("Desktop launcher exists. Will skip.");
-                    resolve(settings);
-                    return;
-                }
-                var iconPathAbs = settings.faviconOut;
-                var command = path.join(__parentDirname,
-                        "node_modules", "electron", "dist",
-                        "electron") +
-                    " --enable-transparent-visuals --disable-gpu " +
-                    path.join(__parentDirname, "electrify-me") + " -r " +
-                    settings.settingsFile;
+                } else {
 
-                var stream = fs.createWriteStream(targetFile);
-                stream.once("open", function(fd) {
-                    stream.write("[Desktop Entry]\n");
-                    stream.write("Version=0.2.2\n");
-                    stream.write("Name=Electrify " + urlObj.hostname + "\n");
-                    stream.write("Comment=Electrified Version of " +
-                        settings.url + "\n");
-                    stream.write("Path=" + __parentDirname + "\n");
-                    stream.write("Exec=" + command + "\n");
-                    stream.write("Icon=" + iconPathAbs + "\n");
-                    stream.write("Type=Application\n");
-                    stream.write("Encoding=UTF-8\n");
-                    stream.write("StartupNotify=false\n");
-                    stream.write("StartupWMClass=Electron\n");
-                    stream.write("OnlyShowIn=Unity;\n");
-                    stream.write("X-UnityGenerated=true\n");
-                    stream.end();
-                    fs.chmodSync(targetFile, "755");
-                    resolve(settings);
-                });
+                    var iconPathAbs = settings.faviconOut;
+                    var command = path.join(__parentDirname, "node_modules",
+                    "electron", "dist", "electron") +
+                    " --enable-transparent-visuals --disable-gpu --ignore-certificate-errors "
+                    + __parentDirname + " -r " +
+                        settings.settingsFile;
+                    var stream = fs.createWriteStream(targetFile);
+                    stream.once("open", function(fd) {
+                        stream.write("[Desktop Entry]\n");
+                        stream.write("Encoding=UTF-8\n");
+                        stream.write("Version=1.0\n");
+                        stream.write("Type=Application\n");
+                        stream.write("Name=" + urlObj.hostname + "\n");
+                        stream.write("Icon=" + iconPathAbs + "\n");
+                        stream.write("Exec=" + command + "\n");
+                        stream.write("StartupNotify=false\n");
+                        stream.write("StartupWMClass=electrify.me\n");
+                        stream.write("OnlyShowIn=Unity;\n");
+                        stream.write("X-UnityGenerated=true\n");
+                        stream.end();
+                        fs.chmodSync(targetFile, "755");
+                    });
+                }
+
+                // try to install
+                if (helper.fileExists(installTargetFile)) {
+                    console.log("Global desktop launcher exists. Will skip.");
+                } else {
+                    console.log("Will install launcher to: " +
+                    installTargetFile);
+                    fs.createReadStream(targetFile).pipe(
+                        fs.createWriteStream(installTargetFile));
+                }
+
+                resolve(settings);
 
             } else {
                 console.log(
