@@ -12,7 +12,7 @@ var core = (function() {
     const request = require("request");
     const vurl = require("valid-url");
     const walk = require("walk");
-    
+
     // Electron dependencies
     const electron = require("electron");
 
@@ -511,8 +511,12 @@ var core = (function() {
                 } else {
                     console.log("Will install launcher to: " +
                     installTargetFile);
-                    fs.createReadStream(targetFile).pipe(
-                        fs.createWriteStream(installTargetFile));
+                    var rs = fs.createReadStream(targetFile);
+                    var ws = fs.createWriteStream(installTargetFile);
+                    ws.on('error', function(err) {
+                      console.log("ERROR:" + err);
+                    });
+                    rs.pipe(ws);
                 }
 
                 resolve(settings);
