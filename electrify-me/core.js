@@ -498,8 +498,6 @@ var core = (function() {
                         stream.write("Exec=" + command + "\n");
                         stream.write("StartupNotify=false\n");
                         stream.write("StartupWMClass=electrify.me\n");
-                        stream.write("OnlyShowIn=Unity;\n");
-                        stream.write("X-UnityGenerated=true\n");
                         stream.end();
                         fs.chmodSync(targetFile, "755");
                     });
