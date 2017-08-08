@@ -6,7 +6,7 @@
 
 ## About
 
-*electrify.me* is a tool to run a website as native-like windows, mac or linux application. Electrified websites are available in your task bar, start menu or launchers. Just like a native application.
+*electrify.me* is a tool to run a website as native-like application. Electrified websites are available in your task bar, start menu or launchers. Just like a native application.
 
 You can customize the apperance of your electrified website by injecting CSS into the website, start the app in kiosk mode, open it at specific window positions [and much more](http://electron.atom.io/docs/api/browser-window/#new-browserwindowoptions).
 
@@ -99,6 +99,11 @@ or
 
 - [ ] Create executable packages
 - [ ] Create installer packages
+
+**Other**
+
+- [ ] Support for MAC (it's an electron app afterall, but I cannot test myself)
+- [ ] Support for WIN (it's an electron app afterall, but I cannot test myself)
 
 ## Licence and attributions
 
