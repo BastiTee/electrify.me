@@ -6,6 +6,7 @@ var core = (function() {
     const os = require("os");
     const path = require("path");
     const cp = require("child_process");
+    const uuidv1 = require('uuid/v1');
 
     // External dependencies
     const $ = require("cheerio");
@@ -115,7 +116,9 @@ var core = (function() {
             }
 
             // set some internal settings
-            settings.uriKey = settings.url.replace(/[^a-zA-Z0-9]/g, "_");
+            settings.uriKey = settings.url
+                .replace(/[^a-zA-Z0-9]/g, "_")
+                .replace(/^https?_+/, "")
             settings.workingDir = __udataDirname + "/" + settings.uriKey;
             settings.faviconIn = settings.workingDir + ".ico";
             settings.faviconOut = settings.workingDir + ".png";
@@ -131,28 +134,6 @@ var core = (function() {
             helper.mkdirSilent(settings.workingDir);
 
             resolve(settings);
-        });
-    };
-
-    exports.openSplash = function() {
-        return new Promise(function(resolve, reject) {
-
-            var splash = new electron.BrowserWindow({
-                width: 120,
-                height: 120,
-                fullscreen: false,
-                fullscreenable: false,
-                resizable: false,
-                movable: false,
-                frame: false,
-                transparent: true,
-                show: false,
-            });
-            splash.loadURL("file://" + __dirname + "/splash.html");
-            splash.webContents.on("did-finish-load", function() {
-                resolve(splash);
-                splash.show();
-            });
         });
     };
 
@@ -213,7 +194,7 @@ var core = (function() {
                     var href = $(this).attr("href");
                     if (helper.isIco(href) || helper.isPng(href)) {
                         var relpath = vurl.isUri(href) ?
-                            href : rootWebpath + "/" + href.replace(/^\//, "");
+                            href : rootWebpath + "/" + href.replace(/^[ ]*\/+/, "").trim();
                         candidates.push(relpath);
                     }
                 });
@@ -315,7 +296,7 @@ var core = (function() {
         });
     };
 
-    exports.setupWebcontent = function(settings, splash) {
+    exports.setupWebcontent = function(settings) {
         return new Promise(function(resolve, reject) {
 
             // if no favicon was found, set it to default
@@ -367,16 +348,12 @@ var core = (function() {
                 bw = null;
             });
             bw.webContents.on("did-finish-load", function() {
-                if (!helper.isVoid(splash))
-                    splash.destroy();
                 if (settings.maximized)
                     bw.maximize();
                 resolve(bw);
             });
             bw.webContents.on("did-fail-load", function(event, errorCode,
                 errorDescription, validatedURL) {
-                if (!helper.isVoid(splash))
-                    splash.destroy();
                 if (errorCode !== -3)
                     helper.help(
                         "Electrifying failed unrecoverable. " + errorCode);
@@ -445,7 +422,7 @@ var core = (function() {
 
                 var symlink = __dirname + "\\ext\\shortcut-windows.bat";
                 var symlinkFile = path.join(__udataDirname,
-                    settings.uriKey + ".lnk");
+                    "electrify_" + settings.uriKey + ".lnk");
 
                 var opts = [
                     "-linkfile",
@@ -473,21 +450,26 @@ var core = (function() {
             } else if (os.platform() === "linux") {
 
                 var targetFile = path.join(__udataDirname,
-                    settings.uriKey + ".desktop");
+                    "electrify_" + settings.uriKey + ".desktop");
                 var installTargetFile = path.join(os.homedir(),
                     ".local", "share", "applications",
-                    settings.uriKey + ".desktop");
+                    "electrify_" + settings.uriKey + ".desktop");
                 if (helper.fileExists(targetFile)) {
                     console.log("Desktop launcher exists. Will skip.");
                 } else {
 
                     var iconPathAbs = settings.faviconOut;
                     var command = path.join(__parentDirname, "node_modules",
-                    "electron", "dist", "electron") +
-                    " --enable-transparent-visuals --disable-gpu --ignore-certificate-errors "
-                    + __parentDirname + " -r " +
+                            "electron", "dist", "electron") + " " +
+                        __parentDirname + " -r " +
                         settings.settingsFile;
-                    var stream = fs.createWriteStream(targetFile);
+                    var stream = fs.createWriteStream(targetFile, {
+                        flags: 'w',
+                        defaultEncoding: 'utf8',
+                        fd: null,
+                        mode: 0o744,
+                        autoClose: true
+                    });
                     stream.once("open", function(fd) {
                         stream.write("[Desktop Entry]\n");
                         stream.write("Encoding=UTF-8\n");
@@ -497,9 +479,8 @@ var core = (function() {
                         stream.write("Icon=" + iconPathAbs + "\n");
                         stream.write("Exec=" + command + "\n");
                         stream.write("StartupNotify=false\n");
-                        stream.write("StartupWMClass=electrify.me\n");
+                        stream.write("StartupWMClass=" + uuidv1() + "\n");
                         stream.end();
-                        fs.chmodSync(targetFile, "755");
                     });
                 }
 
@@ -508,11 +489,11 @@ var core = (function() {
                     console.log("Global desktop launcher exists. Will skip.");
                 } else {
                     console.log("Will install launcher to: " +
-                    installTargetFile);
+                        installTargetFile);
                     var rs = fs.createReadStream(targetFile);
                     var ws = fs.createWriteStream(installTargetFile);
                     ws.on('error', function(err) {
-                      console.log("ERROR:" + err);
+                        console.log("ERROR:" + err);
                     });
                     rs.pipe(ws);
                 }

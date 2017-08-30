@@ -12,7 +12,6 @@ app.on("window-all-closed", function() {
 app.on("ready", function() {
     var argv = minimist(process.argv.slice(2));
     var settings;
-    var splash;
 
     Promise.resolve().then(function() {
         console.log("Electrify initialization started.");
@@ -20,13 +19,8 @@ app.on("ready", function() {
     }).then(function(data) {
         settings = data;
         console.log("Read command line.");
-        return core.openSplash();
-    }).then(function(data) {
-        splash = data;
-        console.log("Loaded splash screen.");
         return core.resolveToFullyQualifiedUrl(settings);
     }).then(function(data) {
-        settings = data;
         console.log("Resolved input url: " + settings.url);
         return core.getFaviconUrl(settings);
     }).then(function() {
@@ -40,7 +34,7 @@ app.on("ready", function() {
         return core.selectBestFavicon(settings);
     }).then(function() {
         console.log("Selected best favicon: " + settings.faviconOut);
-        return core.setupWebcontent(settings, splash);
+        return core.setupWebcontent(settings);
     }).then(function(browserWindow) {
         console.log("Finished application pre-processing.");
         return core.injectCss(settings, browserWindow);

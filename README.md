@@ -14,7 +14,7 @@ You can customize the apperance of your electrified website by injecting CSS int
 
 ## Usage
 
-Download source archive and run..
+Download source archive and, assuming you have node & npm installed – run..
 
 ```
 ./electrify https://web.whatsapp.com

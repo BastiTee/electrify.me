@@ -6,7 +6,7 @@
   "style": "electrify-me/style.css",
   "main": "electrify-me/index.js",
   "scripts": {
-    "start": "electron --enable-transparent-visuals --disable-gpu . "
+    "start": "electron . "
   },
   "repository": {
     "url": "git://github.com/BastiTee/electrify-me.git",
@@ -15,9 +15,10 @@
   "license": "GPL-3.0",
   "dependencies": {
     "cheerio": "0.22.0",
-    "electron": "1.4.5",
+    "electron": "1.7.5",
     "minimist": "1.2.0",
-    "request": "2.78.0",
+    "request": "2.81.0",
+    "uuid": "3.1.0",
     "valid-url": "1.0.9",
     "walk": "2.3.9"
   }

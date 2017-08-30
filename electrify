@@ -18,10 +18,8 @@ cd $SCRIPT_PATH
     printf "done!\n"
 }
 
-printf "ROOT     - ${SCRIPT_PATH}\n"
-printf "ELECTRON - ${ELECTRON}\n"
-printf "APP      - ${APP}\n"
+# printf "ROOT     - ${SCRIPT_PATH}\n"
+# printf "ELECTRON - ${ELECTRON}\n"
+# printf "APP      - ${APP}\n"
 
-$ELECTRON \
---enable-transparent-visuals --disable-gpu --ignore-certificate-errors \
-. $@
+$ELECTRON . $@
