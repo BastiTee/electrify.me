@@ -1,4 +1,4 @@
-This project is discontinued. Use the awesome open-source project [Nativefier](https://github.com/jiahaog/nativefier) instead. It has the same basic idea, but a good community and it's in active development. 
+This project is discontinued. Use the awesome open-source project [Nativefier](https://github.com/jiahaog/nativefier) instead. It has the same basic idea, but quite a big community and it's in active development. 
 
 ---
 
