@@ -1,3 +1,7 @@
+This project is discontinued. Use the way more awesome project [Nativefier](https://github.com/jiahaog/nativefier) instead.
+
+---
+
 ![Electrify-Logo](readme-res/logo+text.png)
 > Create a native-like app from a website. Just like that.
 
